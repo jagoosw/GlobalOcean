@@ -2,3 +2,42 @@ name = "GlobalOcean"
 uuid = "284f8994-2080-4568-8d66-4adea85bd4b3"
 version = "0.1.0"
 authors = ["Jago <jagostrongwright@gmail.com>"]
+
+[deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+ClimaSeaIce = "6ba0ff68-24e6-4315-936c-2e99227c95a4"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+NumericalEarth = "904d977b-046a-4731-8b86-9235c0d1ef02"
+OceanBioME = "a49af516-9db8-4be4-be45-1dad61c5a376"
+Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
+SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[sources]
+ClimaSeaIce = {rev = "jsw/for-oaemip", url = "https://github.com/jagoosw/ClimaSeaIce.jl.git"}
+NumericalEarth = {rev = "jsw/omip-bgc", url = "https://github.com/NumericalEarth/NumericalEarth.jl.git"}
+OceanBioME = {rev = "jsw/for-oaemip", url = "https://github.com/OceanBioME/OceanBioME.jl.git"}
+Oceananigans = {rev = "jsw/for-oaemip", url = "https://github.com/Clima/Oceananigans.jl.git"}
+SeawaterPolynomials = {rev = "ss/conversion-functions", url = "https://github.com/clima/SeawaterPolynomials.jl.git"}
+
+[compat]
+Adapt = "4.7.1"
+CSV = "1.1.0"
+CUDA = "6.4.2"
+CairoMakie = "0.15.15"
+ClimaSeaIce = "0.5.8"
+DataFrames = "1.8.2"
+Downloads = "1.7.0"
+JLD2 = "0.6.7"
+NCDatasets = "0.14.15"
+NumericalEarth = "0.8.1"
+OceanBioME = "0.20.1"
+Oceananigans = "0.113.4"
+SeawaterPolynomials = "0.4.0"
+Statistics = "1.11.5"

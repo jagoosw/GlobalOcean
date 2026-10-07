@@ -2,8 +2,7 @@ module GlobalOcean
 
 export auto_config_directories!,
        ORCA1, ORCA025, ORCA12,
-       ORCA1GRID,
-       ORCATPivotGRID
+       forced_ocean_model
 
 using Dates
 using NumericalEarth
@@ -19,7 +18,6 @@ const output_dir = Ref(on_bouchet ? joinpath("/nfs/roberts/pi/pi_ey239/", get(EN
 include("data_management.jl")
 include("grids.jl")
 include("defaults.jl")
-include("build_ocean.jl")
 include("construct_model.jl")
 
 auto_config_directories!()

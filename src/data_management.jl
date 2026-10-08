@@ -10,6 +10,7 @@ function auto_config_directories!(prefix = "";
 
     forcing_dir[] = joinpath(data_root, "forcing")
     restoring_dir[] = joinpath(data_root, "climatology")
+    bgc_dir[] = data_root 
     output_dir[] = joinpath(output_root, user, prefix)
 
     for d in (forcing_dir[], restoring_dir[], output_dir[],

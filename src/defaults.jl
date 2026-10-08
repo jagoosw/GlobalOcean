@@ -30,3 +30,13 @@ default_barotropic_substeps(::ORCATPivotGRID) = 200
 default_Δt(grid)                 = 30minutes
 default_Δt(::ORCA1GRID)          = 90minutes
 default_Δt(grid::ORCATPivotGRID) = is_orca_twelfth(grid) ? 6minutes : 20minutes
+
+# T and S at 7th order and the biogeochemical tracers at 5th, as in OMIPSimulations. Every tracer is named,
+# because `ocean_simulation` gives any it is not told about an explicit `WENO(order = 5)`.
+function tracer_advection_schemes(biogeochemistry, time_discretization)
+    temperature_salinity = WENO(; order = 7, time_discretization)
+    biogeochemical = WENO(; order = 5, time_discretization)
+    biogeochemical_names = filter(name -> name ∉ (:T, :S), required_biogeochemical_tracers(biogeochemistry))
+    return merge((T = temperature_salinity, S = temperature_salinity),
+                 NamedTuple(name => biogeochemical for name in biogeochemical_names))
+end

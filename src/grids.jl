@@ -1,10 +1,11 @@
 # preset grids, but any other grid can be dropped in
+using KernelAbstractions: @kernel, @index
 using OMIPSimulations: omip_vertical_discretization
 using Oceananigans.Architectures: architecture
 using Oceananigans.Grids: OrthogonalSphericalShellGrid, RightFaceFolded, RightCenterFolded
 using Oceananigans.ImmersedBoundaries: ImmersedBoundaryGrid
 using Oceananigans.OrthogonalSphericalShellGrids: Tripolar
-using Oceananigans.BoundaryConditions: FPivot, TPivot
+using Oceananigans.BoundaryConditions: FPivot, TPivot, fill_halo_regions!
 using Oceananigans.DistributedComputations: Distributed, global_size
 
 # eORCA1 is the only ORCA mesh folded about an F-point pivot (eORCA025/eORCA12 pivot on T points and

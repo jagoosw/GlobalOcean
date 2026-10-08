@@ -1,0 +1,15 @@
+[deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+GlobalOcean = "284f8994-2080-4568-8d66-4adea85bd4b3"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+NumericalEarth = "904d977b-046a-4731-8b86-9235c0d1ef02"
+OceanBioME = "a49af516-9db8-4be4-be45-1dad61c5a376"
+Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+GlobalOcean = {path = ".."}
+NumericalEarth = {rev = "jsw/omip-bgc", url = "https://github.com/NumericalEarth/NumericalEarth.jl.git"}
+OceanBioME = {rev = "jsw/for-oaemip", url = "https://github.com/OceanBioME/OceanBioME.jl.git"}
+Oceananigans = {rev = "jsw/for-oaemip", url = "https://github.com/Clima/Oceananigans.jl.git"}

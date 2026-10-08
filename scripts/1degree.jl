@@ -8,9 +8,9 @@ auto_config_directories!()
 
 grid = ORCA1(GPU())
 
-simulation = GlobalOcean.forced_ocean_model(grid;
-                                            jra55_dataset = MultiYearJRA55(),
-                                            staging = true,
-                                            stop_time = 5 * 21915days)
+simulation = forced_ocean_simulation(grid;
+                                    jra55_dataset = MultiYearJRA55(),
+                                    staging = true,
+                                    stop_time = 5 * 21915days)
 
 run!(simulation)

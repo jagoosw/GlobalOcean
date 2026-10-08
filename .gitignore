@@ -22,6 +22,7 @@ build
 *.data
 *.nc
 *.csv
+!test/data/*.csv
 *.jld2
 examples/OceanBioME_example_data/*
 examples/OceanBioME_example_data

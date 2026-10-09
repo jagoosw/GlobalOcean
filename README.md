@@ -92,6 +92,8 @@ They are [`Ref`s ](https://discourse.julialang.org/t/what-is-ref/47610) so you s
 ### Normally...
 When you first load this package it will create directories `data/forcing`, `data/climatology`, `data/output`, and `data/staging`.
 When you run the model for the first time it is going to try and download the whole JRA55 surface dataset which is around 700GiB, it is probably best to have arranged for this before running `scripts/download_forcing.jl`. 
+Repeat year (1990) is much smaller, to use pass `jra55_dataset = RepeatYearJRA55()`.
+It is also sufficiently small to be fully loaded into GPU memory on a H100 if you pass `backend_size = 2920` which confers meaningful speed up.
 To use the biogeochemistry setup you will also need to download [UnifiedBGC](https://roms-tools.readthedocs.io/en/latest/datasets_overview.html#unified-bgc-dataset) and the [RivR2O](https://zenodo.org/records/14889524) dataset.
 
 ### On Bouchet

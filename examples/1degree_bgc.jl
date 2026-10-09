@@ -6,8 +6,6 @@ using OceanBioME
 using Dates
 using CUDA
 
-using OceanBioME.Models.GasExchangeModel.ScaledGasTransferVelocity: JRA55
-
 arch = GPU()
 grid = ORCA1(arch)
 
@@ -32,7 +30,6 @@ pCO₂ = MaunaLoaCO₂(arch; dates = DateTime(1990, 1, 15):Month(1):DateTime(199
 simulation = forced_ocean_simulation(grid;
                                      biogeochemistry,
                                      atmosphere_tracers = (; pCO₂),
-                                     biogeochemistry_interface_kwargs = (; base_transfer_velocity = JRA55()),
                                      jra55_dataset = RepeatYearJRA55(),
                                      start_date = DateTime(1990, 1, 1),
                                      backend_size = 2920, # the whole repeat year of JRA55 in memory

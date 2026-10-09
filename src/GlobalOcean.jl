@@ -4,9 +4,11 @@ export auto_config_directories!,
        ORCA1, ORCA025, ORCA12,
        forced_ocean_simulation,
        MaunaLoaCO₂,
-       PrescribedChlorophyllAttenuation
+       PrescribedChlorophyllAttenuation,
+       omip_diagnostics!, oaemip_diagnostics!, checkpointer!
 
 using Dates
+using DocStringExtensions
 using NumericalEarth
 using Oceananigans
 
@@ -28,6 +30,7 @@ include("biogeochemistry.jl")
 include("light_attenuation.jl")
 include("mauna_loa.jl")
 include("construct_model.jl")
+include("diagnostics.jl")
 
 function __init__()
     auto_config_directories!()

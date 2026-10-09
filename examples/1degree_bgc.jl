@@ -16,7 +16,7 @@ light_attenuation = PrescribedAttenuationPAR(grid, surface_PAR;
                                              attenuation = PrescribedChlorophyllAttenuation(first_color_fraction = 0.0),
                                              attenuation_discrete_form = true)
 
-plankton = ImplicitProductivity(eltype(grid); maximum_community_productivity = 9.0 / 360days)
+plankton = ImplicitProductivity(; maximum_community_productivity = 9.0 / 360days)
 
 biogeochemistry = MITgcmDIC(grid;
                             plankton,
@@ -33,8 +33,13 @@ simulation = forced_ocean_simulation(grid;
                                      biogeochemistry,
                                      atmosphere_tracers = (; pCO₂),
                                      biogeochemistry_interface_kwargs = (; base_transfer_velocity = JRA55()),
+                                     jra55_dataset = RepeatYearJRA55(),
                                      start_date = DateTime(1990, 1, 1),
                                      backend_size = 2920, # the whole repeat year of JRA55 in memory
                                      stop_time = 1000 * 365days)
+
+omip_diagnostics!(simulation)
+oaemip_diagnostics!(simulation)
+checkpointer!(simulation)
 
 run!(simulation)

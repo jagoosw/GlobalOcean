@@ -3,6 +3,7 @@ using WorldOceanAtlasTools
 using OMIPSimulations: henyey_diffusivity_field, νhb, woa_to_teos10!, salinity_surface_restoring, NormalizeTotalWater
 using Oceananigans.TurbulenceClosures: TriadIsopycnalSkewSymmetricDiffusivity, FluxTapering
 using Oceananigans.Biogeochemistry: required_biogeochemical_tracers
+using OceanBioME.Models.GasExchangeModel.ScaledGasTransferVelocity: JRA55
 using ClimaSeaIce: IncrementalRemapping
 using Oceananigans.Architectures: architecture
 using Oceananigans.TurbulenceClosures.TKEBasedVerticalDiffusivities: CATKEMixingLength
@@ -13,6 +14,13 @@ using NumericalEarth.EarthSystemModels.InterfaceComputations: COARELogarithmicSi
                                                               atmosphere_sea_ice_stability_functions,
                                                               ImpureSaturationSpecificHumidity, AtmosphericThermodynamics
 
+"""
+$(TYPEDSIGNATURES)
+
+Build a JRA55-forced ocean--sea-ice `Simulation` on `grid`,
+optionally carrying `biogeochemistry` with OAEMIP's initial conditions, rivers and iron dust.
+Extra passive `tracers` are added to `(:T, :S)`.
+"""
 function forced_ocean_simulation(grid; 
                                  arch = architecture(grid),
                                  backend_size = 50,
@@ -20,7 +28,7 @@ function forced_ocean_simulation(grid;
                                  end_date = DateTime(2018, 1, 1),
                                  atmosphere_tracers = NamedTuple(),
                                  staging = false,
-                                 jra55_dataset = RepeatYearJRA55(),
+                                 jra55_dataset = MultiYearJRA55(),
                                  jra55_dir = staging ? stage_jra55!(jra55_dataset) : forcing_dir[],
                                  land = JRA55PrescribedLand(grid; 
                                                             dir = jra55_dir, 
@@ -60,18 +68,18 @@ function forced_ocean_simulation(grid;
                                  momentum_advection = WENOVectorInvariant(; vorticity_order = grid isa ORCA1GRID ? 5 : 9,
                                                                             time_discretization = AdaptiveVerticallyImplicitDiscretization(cfl=0.5)),
                                  biogeochemistry = nothing,
+                                 tracers = nothing,
                                  forcing = NamedTuple(),
-                                 # RivR2O river loads (1985-1995 climatology) for the tracers the biogeochemistry carries
                                  river_tracers = filter(tracer -> haskey(DEFAULT_RIVER_INPUTS, tracer), required_biogeochemical_tracers(biogeochemistry)),
                                  river_fluxes = isempty(river_tracers) ? NamedTuple() :
                                                 RivR2OSurfaceFlux(grid; forced_tracers = river_tracers, climatology = true, start_year = 1985, end_year = 1995, land),
                                  dust_deposition = :Fe ∈ required_biogeochemical_tracers(biogeochemistry) ?
                                                    (; Fe = InterpolatedIronDust(BGCInitDustIronDeposition(grid); hard_fraction = 0.987)) : NamedTuple(),
-                                 # T and S at 7th order, biogeochemical tracers at 5th, all adaptive-implicit in the vertical
                                  time_discretization = AdaptiveVerticallyImplicitDiscretization(cfl = 0.5),
-                                 tracer_advection = tracer_advection_schemes(biogeochemistry, time_discretization),
+                                 tracer_advection = tracer_advection_schemes(tracers, biogeochemistry, time_discretization),
                                  ocean = ocean_simulation(grid;
                                                           Δt = 1minutes,
+                                                          tracers = (:T, :S, something(tracers, ())...),
                                                           radiative_forcing,
                                                           momentum_advection,
                                                           tracer_advection,
@@ -95,7 +103,6 @@ function forced_ocean_simulation(grid;
                                                                         start_date,
                                                                         end_date,
                                                                         time_indices_in_memory = backend_size),
-                                 # CCSM3 sea-ice albedo reads live model fields; the atmosphere sees the snow surface
                                  sea_ice_albedo = SeaIceAlbedo(sea_ice.model.ice_thickness,
                                                                sea_ice.model.snow_thickness,
                                                                sea_ice.model.snow_thermodynamics.top_surface_temperature),
@@ -110,7 +117,7 @@ function forced_ocean_simulation(grid;
                                                                       sea_ice_surface = SurfaceRadiationProperties(sea_ice_albedo, 1.0)),
                                  atmosphere_correction = nothing,
                                  radiation_correction = nothing,
-                                 biogeochemistry_interface_kwargs = NamedTuple(),
+                                 biogeochemistry_interface_kwargs = (; base_transfer_velocity = JRA55()),
                                  air_kinematic_viscosity = TemperatureDependentAirViscosity(),
                                  similarity_form = COARELogarithmicSimilarityProfile(),
                                  atmosphere_ocean_fluxes = SimilarityTheoryFluxes(; similarity_form,
@@ -140,7 +147,7 @@ function forced_ocean_simulation(grid;
                                                                   exchanger_correction = atmosphere_correction, radiation_correction,
                                                                   biogeochemistry_interface_kwargs),
                                  Δt = default_Δt(grid),
-                                 stop_time = 1000 * 365days)
+                                 stop_time = 5 * 21915days)
 
     T_init = Field(Metadatum(:temperature; dir = restoring_dir[], dataset = WOAAnnual()), grid)
     S_init = Field(Metadatum(:salinity;    dir = restoring_dir[], dataset = WOAAnnual()), grid)

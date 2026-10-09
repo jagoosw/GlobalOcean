@@ -60,7 +60,7 @@ end
 @testset "tracer_advection_schemes" begin
     td = ExplicitTimeDiscretization()
 
-    schemes = GO.tracer_advection_schemes(nothing, td)
+    schemes = GO.tracer_advection_schemes(nothing, nothing, td)
     @test keys(schemes) == (:T, :S)
     @test all(s -> s isa WENO && weno_order(s) == 7, values(schemes))
     @test all(s -> s.time_discretization === td, values(schemes))
@@ -68,7 +68,7 @@ end
     grid = RectilinearGrid(size = (2, 2, 2), extent = (1, 1, 1))
     for bgc in (MITgcmDIC(grid), LOBSTER(grid), NPZD(grid))
         bgc_tracers = filter(n -> n ∉ (:T, :S), required_biogeochemical_tracers(bgc))
-        schemes = GO.tracer_advection_schemes(bgc, td)
+        schemes = GO.tracer_advection_schemes(nothing, bgc, td)
 
         @test Set(keys(schemes)) == Set((:T, :S, bgc_tracers...))
         @test weno_order(schemes.T) == 7
@@ -78,10 +78,20 @@ end
     end
 
     # NPZD carries its own :T; it must keep the 7th order temperature scheme
-    @test weno_order(GO.tracer_advection_schemes(NPZD(grid), td).T) == 7
+    @test weno_order(GO.tracer_advection_schemes(nothing, NPZD(grid), td).T) == 7
+
+    # extra tracers get the 5th order scheme with the same time discretization, alongside any biogeochemistry
+    schemes = GO.tracer_advection_schemes((:c, :d), nothing, td)
+    @test keys(schemes) == (:T, :S, :c, :d)
+    @test weno_order(schemes.c) == 5 && weno_order(schemes.d) == 5
+    @test all(s -> s.time_discretization === td, values(schemes))
+
+    schemes = GO.tracer_advection_schemes((:c,), MITgcmDIC(grid), td)
+    @test haskey(schemes, :c) && haskey(schemes, :DIC)
+    @test weno_order(schemes.c) == 5
 
     # the time discretization is passed through, whatever it is
     avid = Oceananigans.Advection.AdaptiveVerticallyImplicitDiscretization(cfl = 0.5)
-    schemes = GO.tracer_advection_schemes(MITgcmDIC(grid), avid)
+    schemes = GO.tracer_advection_schemes(nothing, MITgcmDIC(grid), avid)
     @test all(s -> s.time_discretization === avid, values(schemes))
 end

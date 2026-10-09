@@ -98,5 +98,8 @@ To use the biogeochemistry setup you will also need to download [UnifiedBGC](htt
 If you are running on Bouchet the package will point to a predownloaded version of all the data, if you can not access it please email [me](mailto:jago.strong-wright@yale.edu).
 On Bouchet `staging_dir` will automatically configure to use the fast NVMe storage on the nodes and will be used if you pass `staging=true` to `forced_ocean_simulation` (although I have found this results in minimal performance gain).
 
+## Restart files
+Coming soon...
+
 ## Performance
 Currently I get around 90 simulated years per day with the MITgcm BGC, and 140 simulated years per day with physics only on a H100 on Bouchet.

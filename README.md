@@ -100,6 +100,19 @@ simulation = forced_ocean_simulation(grid;
 `MaunaLoaCO₂(arch)` with no arguments gives the monthly record for 1958--2017, cycled with the multi-year JRA55 forcing (see below); here we instead repeat 1990 to go with repeat-year forcing.
 We have to use `PARFromShortwave` to get the downwelling radiation from the atmosphere component of the model and, since this model doesn't prognose phytoplankton, we have to use the chlorophyll climatology from the radiation model to attenuation the light through `PrescribedAttenuationPAR` with `PrescribedChlorophyllAttenuation`.
 
+### Alkalinity release
+You can prescribe a Guassian alkalinity release following the OAEMIP protocol by adding a forcing:
+```julia
+alkalinity_release = GaussianInjection(grid, (-49.5, 0), 0.0; duration = 20days) # grid, center, start time; duration
+simulation = forced_ocean_simulation(grid;
+                                     biogeochemistry,
+                                     atmosphere_tracers = (; pCO₂),
+                                     jra55_dataset = RepeatYearJRA55(),
+                                     start_date = DateTime(1990, 1, 1),
+                                     forcing = (; Alk2 = release))
+```
+Default is 1Tmol over 1 year in a 250km standard deviation patch cutoff at 3 standard deviations over the surface cells only.
+
 ## Forcing data
 To change the automatically configured data and output directories you can change the value of `GlobalOcean.forcing_dir`, `GlobalOcean.restoring_dir`, `GlobalOcean.staging_dir`, `GlobalOcean.bgc_dir`, and `GlobalOcean.output_dir`.
 They are [`Ref`s ](https://discourse.julialang.org/t/what-is-ref/47610) so you set it like `GlobalOcean.bgc_dir[] = "~/bgc_data/"`.

@@ -1,6 +1,7 @@
 using Oceananigans.Units
 using WorldOceanAtlasTools
-using OMIPSimulations: henyey_diffusivity_field, νhb, woa_to_teos10!, salinity_surface_restoring, NormalizeTotalWater
+using OMIPSimulations: henyey_diffusivity_field, νhb, woa_to_teos10!, salinity_surface_restoring, NormalizeTotalWater,
+                       omip_progress_callback
 using Oceananigans.TurbulenceClosures: TriadIsopycnalSkewSymmetricDiffusivity, FluxTapering
 using Oceananigans.Biogeochemistry: required_biogeochemical_tracers
 using Oceananigans.OutputReaders: Cyclical
@@ -27,6 +28,10 @@ Model time zero is `start_date`. The JRA55 forcing cycles every `forcing_cycle` 
 iron dust) every `climatology_cycle` (see [`climatology_period`](@ref): 365.25 days, or 365), so all stay in phase
 with each other and the calendar from cycle to cycle, the climatologies to within 0.75 days. Cycle any
 `atmosphere_tracers` the same way, e.g. `MaunaLoaCO₂(arch; dates, start_date, period = forcing_cycle)`.
+
+Every `progress_frequency` iterations (`nothing` for never) the time, extrema of the state and wall time per step are
+logged, followed by a `PROBE` line of memory and GC use (unless `ENV["OMIP_PROBE"] = "0"`). Its reductions synchronise
+the GPU, so keep it infrequent.
 """
 function forced_ocean_simulation(grid; 
                                  arch = architecture(grid),
@@ -82,7 +87,7 @@ function forced_ocean_simulation(grid;
                                  biogeochemistry = nothing,
                                  tracers = nothing,
                                  forcing = NamedTuple(),
-                                 river_tracers = filter(tracer -> haskey(DEFAULT_RIVER_INPUTS, tracer), required_biogeochemical_tracers(biogeochemistry)),
+                                 river_tracers = filter(tracer -> haskey(DEFAULT_RIVER_INPUTS, replicated_tracer(tracer)), required_biogeochemical_tracers(biogeochemistry)),
                                  river_fluxes = isempty(river_tracers) ? NamedTuple() :
                                                 RivR2OSurfaceFlux(grid; forced_tracers = river_tracers, climatology = true, start_year = 1985, end_year = 1995, land),
                                  dust_deposition = :Fe ∈ required_biogeochemical_tracers(biogeochemistry) ?
@@ -162,7 +167,8 @@ function forced_ocean_simulation(grid;
                                                                   exchanger_correction = atmosphere_correction, radiation_correction,
                                                                   biogeochemistry_interface_kwargs),
                                  Δt = default_Δt(grid),
-                                 stop_time = 5 * 21915days)
+                                 stop_time = 5 * 21915days,
+                                 progress_frequency = 100)
 
     T_init = Field(Metadatum(:temperature; dir = restoring_dir[], dataset = WOAAnnual()), grid)
     S_init = Field(Metadatum(:salinity;    dir = restoring_dir[], dataset = WOAAnnual()), grid)
@@ -172,9 +178,9 @@ function forced_ocean_simulation(grid;
     if !isnothing(biogeochemistry)
         for tracer in required_biogeochemical_tracers(ocean.model.biogeochemistry)
             tracer ∈ (:T, :S) && continue
-            if haskey(BGC_INIT_TRACERS, tracer)
+            if haskey(BGC_INIT_TRACERS, replicated_tracer(tracer))
                 set!(ocean.model.tracers[tracer], 
-                     Metadatum(BGC_INIT_TRACERS[tracer]; 
+                     Metadatum(BGC_INIT_TRACERS[replicated_tracer(tracer)]; 
                                dataset = BGCInitClimatology(), 
                                date = start_date))
             else
@@ -200,6 +206,10 @@ function forced_ocean_simulation(grid;
 
     add_callback!(simulation, ConservativeSurfaceFluxRestoringCallback(salt_restoring, ocean.model), IterationInterval(1))
     add_callback!(simulation, NormalizeTotalWater(model, Δt, nothing), IterationInterval(1))
+
+    if !isnothing(progress_frequency)
+        add_callback!(simulation, omip_progress_callback(Ref(time_ns())), IterationInterval(progress_frequency); name = :progress)
+    end
 
     return simulation
 end

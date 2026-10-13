@@ -5,7 +5,9 @@ export auto_config_directories!,
        forced_ocean_simulation,
        MaunaLoaCO₂,
        PrescribedChlorophyllAttenuation,
+       GaussianInjection, GaussianInjectionLowMemory,
        omip_diagnostics!, oaemip_diagnostics!, checkpointer!,
+       add_output_writer!, flush_output!,
        pickup_restart!
 
 using Dates
@@ -31,6 +33,7 @@ include("interpolated_iron_dust.jl")
 include("biogeochemistry.jl")
 include("light_attenuation.jl")
 include("mauna_loa.jl")
+include("alkalinity_injection.jl")
 include("construct_model.jl")
 include("diagnostics.jl")
 include("restart.jl")

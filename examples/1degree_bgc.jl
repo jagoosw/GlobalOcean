@@ -39,8 +39,12 @@ simulation = forced_ocean_simulation(grid;
 
 pickup_restart!(simulation, DateTime(1990, 1, 1); start_date = DateTime(1990, 1, 1), repeat_year = true)
 
-omip_diagnostics!(simulation)
-oaemip_diagnostics!(simulation)
+omip_diagnostics!(simulation; async = true)
+oaemip_diagnostics!(simulation; async = true)
 checkpointer!(simulation)
 
-run!(simulation)
+try
+    run!(simulation)
+finally
+    flush_output!(simulation) # write anything still queued
+end

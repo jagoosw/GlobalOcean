@@ -218,4 +218,37 @@ end
 
     forcing = GO.RivR2OForcing(RIVER_LL_GRID; forced_tracers = (:Alk,), climatology = true, kw...)
     @test forcing.Alk isa DiscreteForcing
+
+    # carbonate replicates share the input of the tracer they replicate
+    replicated = GO.RivR2OSurfaceFlux(RIVER_LL_GRID; forced_tracers = (:Alk1, :Alk2), climatology = true, kw...)
+    @test keys(replicated) == (:Alk1, :Alk2)
+    @test replicated.Alk1 === replicated.Alk2
+    @test interior(replicated.Alk2.condition) == interior(flux)
+
+    replicated_forcing = GO.RivR2OForcing(RIVER_LL_GRID; forced_tracers = (:Alk1, :Alk2), climatology = true, kw...)
+    @test keys(replicated_forcing) == (:Alk1, :Alk2)
+    @test replicated_forcing.Alk2 isa DiscreteForcing
+end
+
+@testset "carbonate replicates" begin
+    @test GO.replicated_tracer(:DIC2) == :DIC
+    @test GO.replicated_tracer(:Alk1) == :Alk
+    @test GO.replicated_tracer(:Alk12) == :Alk
+    @test GO.replicated_tracer(:DIC) == :DIC
+    @test GO.replicated_tracer(:PO₄) == :PO₄
+    @test GO.replicated_tracer(:O₂) == :O₂
+    @test GO.replicated_tracer(:T2) == :T2 # only DIC and Alk are replicated
+
+    @test GO.replicated_tracers((:DIC1, :Alk1, :DIC2, :Alk2, :PO₄)) == (:DIC, :Alk, :PO₄)
+
+    inputs = (DIC = 1, Alk = 2, PO₄ = 3)
+    @test GO.replicate_river_inputs(inputs, (:DIC1, :Alk1, :DIC2, :Alk2, :PO₄)) ==
+          (DIC1 = 1, Alk1 = 2, DIC2 = 1, Alk2 = 2, PO₄ = 3)
+    @test GO.replicate_river_inputs(inputs, (:DIC, :Alk)) == (DIC = 1, Alk = 2)
+
+    # the tracers `forced_ocean_simulation` gives river inputs and initial conditions to
+    bgc = MITgcmDIC(RectilinearGrid(size = (1, 1, 2), extent = (1, 1, 2)); inorganic_carbon = CarbonateSystem(2))
+    tracers = Oceananigans.Biogeochemistry.required_biogeochemical_tracers(bgc)
+    @test filter(t -> haskey(GO.DEFAULT_RIVER_INPUTS, GO.replicated_tracer(t)), tracers) ⊇ (:DIC1, :Alk1, :DIC2, :Alk2, :PO₄, :DOP)
+    @test all(t -> haskey(GO.BGC_INIT_TRACERS, GO.replicated_tracer(t)), (:DIC1, :Alk1, :DIC2, :Alk2))
 end

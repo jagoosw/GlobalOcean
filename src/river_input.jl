@@ -127,11 +127,14 @@ const DEFAULT_RIVER_INPUTS = (DIC = (DIC = 1e9/12/yr, DOC_l = 1e9/12/yr, DOC_sl 
 
 The RivR2O river loads as a 3D `Forcing` per tracer, nonzero only in the surface layer but evaluated
 at every level. Prefer [`RivR2OSurfaceFlux`](@ref), which applies the same input as a top boundary
-flux; this is kept for comparison. See `river_load_data` for the keyword arguments.
+flux; this is kept for comparison. Carbonate replicates (`DIC1`, `Alk2`, ...) in `forced_tracers` get
+the `DIC`/`Alk` input. See `river_load_data` for the keyword arguments.
 """
 function RivR2OForcing(grid; forced_tracers = DEFAULT_RIVER_TRACERS, kwargs...)
-    data, times, source_map, offsets = river_load_data(grid; forced_tracers, kwargs...)
-    return build_river_forcing(architecture(grid), forced_tracers, data, times, source_map, offsets)
+    input_tracers = replicated_tracers(forced_tracers)
+    data, times, source_map, offsets = river_load_data(grid; forced_tracers = input_tracers, kwargs...)
+    forcing = build_river_forcing(architecture(grid), input_tracers, data, times, source_map, offsets)
+    return replicate_river_inputs(forcing, forced_tracers)
 end
 
 """
@@ -141,13 +144,28 @@ The RivR2O river loads as a top `FluxBoundaryCondition` per tracer, `-load / are
 cells (negative is into the ocean), for the `additional_surface_fluxes` of the ocean. With
 `climatology = true` the flux is constant and is computed once into a 2D `Field`; otherwise the loads
 are time interpolated at the surface each evaluation. Identical in the top cell to [`RivR2OForcing`](@ref).
+Carbonate replicates (`DIC1`, `Alk2`, ...) in `forced_tracers` get the `DIC`/`Alk` input.
 See `river_load_data` for the keyword arguments.
 """
 function RivR2OSurfaceFlux(grid; forced_tracers = DEFAULT_RIVER_TRACERS, kwargs...)
-    data, times, source_map, offsets = river_load_data(grid; forced_tracers, kwargs...)
-    loads = build_river_loads(architecture(grid), forced_tracers, data, times, source_map, offsets)
-    return map(load -> river_surface_flux(grid, load), loads)
+    input_tracers = replicated_tracers(forced_tracers)
+    data, times, source_map, offsets = river_load_data(grid; forced_tracers = input_tracers, kwargs...)
+    loads = build_river_loads(architecture(grid), input_tracers, data, times, source_map, offsets)
+    fluxes = map(load -> river_surface_flux(grid, load), loads)
+    return replicate_river_inputs(fluxes, forced_tracers)
 end
+
+# `CarbonateSystem(N)` names its tracers `DIC1`, `Alk1`, ... when `N > 1`, and each replicate takes the river input
+# (and initial condition) of the tracer it replicates. The inputs are only read, so the replicates share them.
+function replicated_tracer(name)
+    base = Symbol(rstrip(isdigit, string(name)))
+    return base ∈ (:DIC, :Alk) ? base : name
+end
+
+replicated_tracers(forced_tracers) = Tuple(unique(map(replicated_tracer, forced_tracers)))
+
+replicate_river_inputs(inputs, forced_tracers) =
+    NamedTuple{Tuple(forced_tracers)}(map(name -> inputs[replicated_tracer(name)], Tuple(forced_tracers)))
 
 function river_load_data(grid;
                          dir = bgc_dir[],

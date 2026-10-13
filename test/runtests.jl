@@ -53,6 +53,8 @@ try
         @testset "biogeochemistry.jl"       include("test_biogeochemistry.jl")
         @testset "light_attenuation.jl"     include("test_light_attenuation.jl")
         @testset "mauna_loa.jl"             include("test_mauna_loa.jl")
+        @testset "alkalinity_injection.jl"  include("test_alkalinity_injection.jl")
+        @testset "diagnostics.jl"           include("test_diagnostics.jl")
         @testset "forcing_cycles.jl"        include("test_forcing_cycles.jl")
         @testset "restart.jl"               include("test_restart.jl")
 

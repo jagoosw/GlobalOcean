@@ -4,12 +4,33 @@ using Oceananigans.Biogeochemistry: biogeochemical_auxiliary_fields
 using Oceananigans.Grids: znodes, znode
 using Oceananigans.Utils: on_architecture
 using NumericalEarth.Diagnostics: MixedLayerDepthField
+using OMIPSimulations: AsyncJLD2Writer, FlushAsyncOutput, flush_output!
 using OMIPSimulations: zonal_volume_flux, meridional_volume_flux, zonal_tracer_transport, meridional_tracer_transport,
                        uu_at_ccc, vv_at_ccc, one_at_ccc
 using OceanBioME.Models.NutrientsPlanktonDetritusModels.PlanktonModels: community_productivity
 using OceanBioME.Models.GasExchangeModel: surface_value
 using OceanBioME.Models.CarbonChemistryModel: silicate_concentration, phosphate_concentration
 using OceanBioME.Models.NutrientsPlanktonDetritusModels.InorganicCarbonModels: AbstractInorganicCarbon
+
+"""
+$(TYPEDSIGNATURES)
+
+Add `writer` to `simulation.output_writers` as `name`. With `async = true` it is wrapped in an `AsyncJLD2Writer`,
+which compresses and writes on a background task (so needs `julia --threads ≥ 2`), and a callback is added to
+write anything still queued at the end of `run!`. Call `flush_output!(simulation)` in a `finally` around `run!`
+too, so that an error does not lose queued writes. A `Checkpointer` waits for the queued writes before it
+saves, so add it after the writers (see [`checkpointer!`](@ref)).
+"""
+function add_output_writer!(simulation, name, writer; async = false)
+    if async
+        writer = AsyncJLD2Writer(writer)
+        simulation.callbacks[:flush_async_output] = Callback(FlushAsyncOutput(), IterationInterval(typemax(Int)))
+    end
+
+    simulation.output_writers[name] = writer
+
+    return nothing
+end
 
 #####
 ##### OMIP physical diagnostics (OMIPSimulations' `add_omip_diagnostics!` without the checkpointer)
@@ -18,7 +39,8 @@ using OceanBioME.Models.NutrientsPlanktonDetritusModels.InorganicCarbonModels: A
 """
 $(TYPEDSIGNATURES)
 
-Add OMIPSimulations' surface, 3-D field and global-average output writers to `simulation`.
+Add OMIPSimulations' surface, 3-D field and global-average output writers to `simulation`, written in the
+background with `async = true` (see [`add_output_writer!`](@ref)).
 """
 function omip_diagnostics!(simulation;
                            field_mean_interval = 5days,
@@ -27,7 +49,8 @@ function omip_diagnostics!(simulation;
                            averaging_stride = 1,
                            output_dir = GlobalOcean.output_dir[],
                            filename_prefix = "omip",
-                           file_splitting_interval = 360days)
+                           file_splitting_interval = 360days,
+                           async = false)
 
     model   = simulation.model
     ocean   = model.ocean
@@ -76,14 +99,16 @@ function omip_diagnostics!(simulation;
                        JSio      = NumericalEarth.Diagnostics.sea_ice_ocean_salinity_flux(model))
 
     # Each writer is handed `ocean.model`, but Oceananigans serializes `including` against the coupled model
-    simulation.output_writers[:surface] = JLD2Writer(ocean.model, surface_outputs;
-                                                     including = Symbol[],
-                                                     schedule = AveragedTimeInterval(surface_averaging_interval; stride = averaging_stride),
-                                                     dir = output_dir,
-                                                     filename = filename_prefix * "_surface",
-                                                     file_splitting = TimeInterval(file_splitting_interval),
-                                                     overwrite_files = true,
-                                                     jld2_kw = Dict(:compress => ZstdFilter()))
+    writer = JLD2Writer(ocean.model, surface_outputs;
+                        including = Symbol[],
+                        schedule = AveragedTimeInterval(surface_averaging_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_surface",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true,
+                        jld2_kw = Dict(:compress => ZstdFilter()))
+
+    add_output_writer!(simulation, :surface, writer; async)
 
     bop = Oceananigans.Models.buoyancy_operation(ocean.model)
 
@@ -102,17 +127,20 @@ function omip_diagnostics!(simulation;
                      uvolso = KernelFunctionOperation{Face,   Center, Center}(zonal_tracer_transport,      grid, u, S),
                      vvolso = KernelFunctionOperation{Center, Face,   Center}(meridional_tracer_transport, grid, v, S))
 
-    simulation.output_writers[:fields] = JLD2Writer(ocean.model, field_outputs;
-                                                    including = Symbol[],
-                                                    schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
-                                                    dir = output_dir,
-                                                    filename = filename_prefix * "_fields",
-                                                    file_splitting = TimeInterval(file_splitting_interval),
-                                                    overwrite_files = true,
-                                                    jld2_kw = Dict(:compress => ZstdFilter()))
+    writer = JLD2Writer(ocean.model, field_outputs;
+                        including = Symbol[],
+                        schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_fields",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true,
+                        jld2_kw = Dict(:compress => ZstdFilter()))
+
+    add_output_writer!(simulation, :fields, writer; async)
 
     # Global volume means are stored as `Integral`s to be divided by `voco` offline, because `Average`
-    # freezes its volume denominator at construction, which is wrong on a z-star grid
+    # freezes its volume denominator at construction, which is wrong on a z-star grid. They are saved in
+    # double precision: Float32 resolves only ~1e-7 of a global integral, coarser than the drifts they track
     average_outputs = (zosga = Average(η),
                        to_h  = Average(T,   dims = (1, 2)),
                        so_h  = Average(S,   dims = (1, 2)),
@@ -123,13 +151,16 @@ function omip_diagnostics!(simulation;
                        sivol = Integral(hi * ℵi),
                        snvol = Integral(hs * ℵi))
 
-    simulation.output_writers[:averages] = JLD2Writer(ocean.model, average_outputs;
-                                                      including = Symbol[],
-                                                      schedule = AveragedTimeInterval(field_mean_interval; stride = averaging_stride),
-                                                      dir = output_dir,
-                                                      filename = filename_prefix * "_averages",
-                                                      file_splitting = TimeInterval(file_splitting_interval),
-                                                      overwrite_files = true)
+    writer = JLD2Writer(ocean.model, average_outputs;
+                        including = Symbol[],
+                        array_type = Array{Float64},
+                        schedule = AveragedTimeInterval(field_mean_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_averages",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true)
+
+    add_output_writer!(simulation, :averages, writer; async)
 
     return nothing
 end
@@ -208,7 +239,8 @@ end
 $(TYPEDSIGNATURES)
 
 Add OAEMIP's biogeochemical output writers (carbonate system, O₂ saturation, productivity, POP export and
-global carbon integrals) for a `NutrientsPlanktonDetritus` model with `ImplicitProductivity`.
+global carbon integrals) for a `NutrientsPlanktonDetritus` model with `ImplicitProductivity`, written in the
+background with `async = true` (see [`add_output_writer!`](@ref)).
 """
 function oaemip_diagnostics!(simulation;
                              surface_averaging_interval = 5days,
@@ -216,7 +248,8 @@ function oaemip_diagnostics!(simulation;
                              averaging_stride = 1,
                              output_dir = GlobalOcean.output_dir[],
                              filename_prefix = "omip",
-                             file_splitting_interval = 360days)
+                             file_splitting_interval = 360days,
+                             async = false)
 
     ocean = simulation.model.ocean.model
     biogeochemistry = ocean.biogeochemistry
@@ -258,54 +291,62 @@ function oaemip_diagnostics!(simulation;
     export_flux        = (; POP_export)
     spatial_integrals  = carbonate_integrals
 
-    simulation.output_writers[:bgc_fields] =
-        JLD2Writer(ocean, output_fields;
-                   schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
-                   dir = output_dir,
-                   filename = filename_prefix * "_bgc_fields",
-                   file_splitting = TimeInterval(file_splitting_interval),
-                   overwrite_files = true,
-                   jld2_kw = Dict(:compress => ZstdFilter()))
+    writer = JLD2Writer(ocean, output_fields;
+                        schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_bgc_fields",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true,
+                        jld2_kw = Dict(:compress => ZstdFilter()))
 
-    simulation.output_writers[:bgc_surfaces] =
-        JLD2Writer(ocean, output_surface;
-                   indices = (:, :, grid.Nz),
-                   schedule = AveragedTimeInterval(surface_averaging_interval; stride = averaging_stride),
-                   dir = output_dir,
-                   filename = filename_prefix * "_bgc_surfaces",
-                   file_splitting = TimeInterval(file_splitting_interval),
-                   overwrite_files = true,
-                   jld2_kw = Dict(:compress => ZstdFilter()))
+    add_output_writer!(simulation, :bgc_fields, writer; async)
 
-    simulation.output_writers[:bgc_vertical_integrals] =
-        JLD2Writer(ocean, vertical_integrals;
-                   indices = (:, :, 1),
-                   schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
-                   dir = output_dir,
-                   filename = filename_prefix * "_bgc_vertical_integrals",
-                   file_splitting = TimeInterval(file_splitting_interval),
-                   overwrite_files = true,
-                   jld2_kw = Dict(:compress => ZstdFilter()))
+    writer = JLD2Writer(ocean, output_surface;
+                        indices = (:, :, grid.Nz),
+                        schedule = AveragedTimeInterval(surface_averaging_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_bgc_surfaces",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true,
+                        jld2_kw = Dict(:compress => ZstdFilter()))
 
-    simulation.output_writers[:bgc_exports] =
-        JLD2Writer(ocean, export_flux;
-                   indices = (:, :, k_100),
-                   schedule = AveragedTimeInterval(surface_averaging_interval; stride = averaging_stride),
-                   dir = output_dir,
-                   filename = filename_prefix * "_bgc_exports",
-                   file_splitting = TimeInterval(file_splitting_interval),
-                   overwrite_files = true,
-                   jld2_kw = Dict(:compress => ZstdFilter()))
+    add_output_writer!(simulation, :bgc_surfaces, writer; async)
 
-    simulation.output_writers[:bgc_spatial_integrals] =
-        JLD2Writer(ocean, spatial_integrals;
-                   indices = (1, 1, 1),
-                   schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
-                   dir = output_dir,
-                   filename = filename_prefix * "_bgc_integrals",
-                   file_splitting = TimeInterval(file_splitting_interval),
-                   overwrite_files = true,
-                   jld2_kw = Dict(:compress => ZstdFilter()))
+    writer = JLD2Writer(ocean, vertical_integrals;
+                        indices = (:, :, 1),
+                        schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_bgc_vertical_integrals",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true,
+                        jld2_kw = Dict(:compress => ZstdFilter()))
+
+    add_output_writer!(simulation, :bgc_vertical_integrals, writer; async)
+
+    writer = JLD2Writer(ocean, export_flux;
+                        indices = (:, :, k_100),
+                        schedule = AveragedTimeInterval(surface_averaging_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_bgc_exports",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true,
+                        jld2_kw = Dict(:compress => ZstdFilter()))
+
+    add_output_writer!(simulation, :bgc_exports, writer; async)
+
+    # global inventories are ~3e21 mmol, where Float32 only resolves ~3e14 mmol (0.3 Tmol): too coarse to
+    # see a perturbation in the difference between replicates, so these are saved in double precision
+    writer = JLD2Writer(ocean, spatial_integrals;
+                        indices = (1, 1, 1),
+                        array_type = Array{Float64},
+                        schedule = AveragedTimeInterval(field_averaging_interval; stride = averaging_stride),
+                        dir = output_dir,
+                        filename = filename_prefix * "_bgc_integrals",
+                        file_splitting = TimeInterval(file_splitting_interval),
+                        overwrite_files = true,
+                        jld2_kw = Dict(:compress => ZstdFilter()))
+
+    add_output_writer!(simulation, :bgc_spatial_integrals, writer; async)
 
     return nothing
 end

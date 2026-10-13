@@ -6,7 +6,7 @@ This repo depends on un-released branches of Oceananigans, ClimaSeaIce, OceanBio
 ~$ mkdir AnOceanProject
 ~$ cd AnOceanProject
 ~$ touch Project.toml
-~$ julia --project -t4
+~$ julia --project -t auto
                _
    _       _ _(_)_     |  Documentation: https://docs.julialang.org
   (_)     | (_) (_)    |
@@ -16,12 +16,22 @@ This repo depends on un-released branches of Oceananigans, ClimaSeaIce, OceanBio
  _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org release
 |__/                   |
 
-julia> using Pkg; Pkg.add(url="https://github.com/jagoosw/GlobalOcean", rev="v0.1.0")
+julia> using Pkg
+
+julia> Pkg.add([PackageSpec(url="https://github.com/NumericalEarth/NumericalEarth.jl.git", rev="jsw/omip-bgc"),
+                PackageSpec(url="https://github.com/NumericalEarth/NumericalEarth.jl.git", rev="jsw/omip-bgc", subdir="experiments/OMIPSimulations"),
+                PackageSpec(url="https://github.com/Clima/Oceananigans.jl.git", rev="jsw/for-oaemip"),
+                PackageSpec(url="https://github.com/jagoosw/ClimaSeaIce.jl.git", rev="jsw/for-oaemip"),
+                PackageSpec(url="https://github.com/OceanBioME/OceanBioME.jl.git", rev="jsw/for-oaemip"),
+                PackageSpec(url="https://github.com/clima/SeawaterPolynomials.jl.git", rev="ss/conversion-functions"),
+                PackageSpec(url="https://github.com/jagoosw/GlobalOcean", rev="v0.1.0")])
 ```
-You will also need to explicitly add some other packages to use them in scripts:
+The branches have to be added first, in the same call or before `GlobalOcean`, because Pkg ignores the `[sources]` in GlobalOcean's `Project.toml` when it is installed as a package, and `OMIPSimulations` and some dependencies are not registered.
+This puts Oceananigans, OceanBioME and NumericalEarth in your project, so they can be used in scripts; you will also need to add CUDA to run on the GPU:
 ```console
-julia> Pkg.add(["Oceananigans", "OceanBioME", "NumericalEarth", "CUDA"])
+julia> Pkg.add("CUDA")
 ```
+Alternatively, clone this repo and use it as the project (`julia --project=. -e 'using Pkg; Pkg.instantiate()'`), where its `[sources]` are used directly.
 ## Physics only setup
 As shown in `examples/1degree.jl`, the default configuration is an ocean-sea ice model model forced with JRA55 atmosphere and land, configured to setup (semi)-validated closures.
 The model is initialised with WOA climatology temperature and salinity, and ECCO sea ice concentration and thickness.

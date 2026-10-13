@@ -14,7 +14,7 @@ using NumericalEarth
 using Oceananigans
 
 const on_bouchet = isdir("/nfs/roberts/pi/pi_ey239")
-const forcing_dir = Ref(on_bouchet ? "/nfs/roberts/pi/pi_ey239/js5256/OAEMIP/data/forcing" : "data/forcing")
+const forcing_dir = Ref(on_bouchet ? "/nfs/roberts/pi/pi_ey239/js5256/OAEMIP/data/forcing_data" : "data/forcing_data")
 const restoring_dir = Ref(on_bouchet ? "/nfs/roberts/pi/pi_ey239/js5256/OAEMIP/data/climatology" : "data/climatology")
 const staging_dir = Ref(on_bouchet ? joinpath("/tmp", "jra55_" * get(ENV, "SLURM_JOB_ID", string(getpid()))) : "data/staging")
 const bgc_dir = Ref(on_bouchet ? "/nfs/roberts/pi/pi_ey239/js5256/OAEMIP/data" : "data")

@@ -30,6 +30,7 @@ using GlobalOcean
 using NumericalEarth
 using Oceananigans
 using Oceananigans.Units
+using Dates
 using CUDA
 
 auto_config_directories!()
@@ -37,6 +38,8 @@ auto_config_directories!()
 grid = ORCA1(GPU())
 
 simulation = forced_ocean_simulation(grid)
+
+pickup_restart!(simulation, DateTime(1958, 1, 1))
 
 omip_diagnostics!(simulation)
 checkpointer!(simulation)
@@ -80,8 +83,11 @@ pCO₂ = MaunaLoaCO₂(arch; dates = DateTime(1990, 1, 15):Month(1):DateTime(199
 
 simulation = forced_ocean_simulation(grid;
                                      biogeochemistry,
-                                     atmosphere_tracers = (; pCO₂))
+                                     atmosphere_tracers = (; pCO₂),
+                                     jra55_dataset = RepeatYearJRA55(),
+                                     start_date = DateTime(1990, 1, 1))
 ```
+`MaunaLoaCO₂(arch)` with no arguments gives the monthly record for 1958--2017, cycled with the multi-year JRA55 forcing (see below); here we instead repeat 1990 to go with repeat-year forcing.
 We have to use `PARFromShortwave` to get the downwelling radiation from the atmosphere component of the model and, since this model doesn't prognose phytoplankton, we have to use the chlorophyll climatology from the radiation model to attenuation the light through `PrescribedAttenuationPAR` with `PrescribedChlorophyllAttenuation`.
 
 ## Forcing data
@@ -90,7 +96,7 @@ They are [`Ref`s ](https://discourse.julialang.org/t/what-is-ref/47610) so you s
 `staging_dir` is only needed when you have a slow `forcing_dir` so that data can be asynchronously loaded to a faster drive before it is needed.
 
 ### Normally...
-When you first load this package it will create directories `data/forcing`, `data/climatology`, `data/output`, and `data/staging`.
+When you first load this package it will create directories `data/forcing_data`, `data/climatology`, `data/output`, and `data/staging`.
 When you run the model for the first time it is going to try and download the whole JRA55 surface dataset which is around 700GiB, it is probably best to have arranged for this before running `scripts/download_forcing.jl`. 
 Repeat year (1990) is much smaller, to use pass `jra55_dataset = RepeatYearJRA55()`.
 It is also sufficiently small to be fully loaded into GPU memory on a H100 if you pass `backend_size = 2920` which confers meaningful speed up.
@@ -101,7 +107,23 @@ If you are running on Bouchet the package will point to a predownloaded version 
 On Bouchet `staging_dir` will automatically configure to use the fast NVMe storage on the nodes and will be used if you pass `staging=true` to `forced_ocean_simulation` (although I have found this results in minimal performance gain).
 
 ## Restart files
-Coming soon...
+`pickup_restart!(simulation, date)` starts a simulation from the checkpoint of the OMIP spin-up (`orca_checkpoint_iteration*.jld2` in `GlobalOcean.OMIP_RESTART_DIR[]`, which points at the spin-up on Bouchet) whose forcing date is closest to `date`, and sets the model clock so the forcing is picked up where the checkpointed run had it.
+The spin-up was forced with 1958-2018 JRA55 and checkpointed every 360 days, so checkpoints fall on different dates in each cycle; by default only the last cycle is searched (pass `cycle = n`, 0-based, for another).
+```julia
+simulation = forced_ocean_simulation(grid)
+
+# the last-cycle state nearest 1 January 1958, with the clock at its time since 1958-01-01
+pickup_restart!(simulation, DateTime(1958, 1, 1))
+```
+For a run with a different `start_date` pass the same `start_date` to `pickup_restart!`: only checkpoints dated on or after it can be used.
+For repeat-year runs pass `repeat_year = true` to pick the checkpoint nearest `date` (in any year) and set the clock to its time of year since `start_date`:
+```julia
+simulation = forced_ocean_simulation(grid; jra55_dataset = RepeatYearJRA55(), start_date = DateTime(1990, 1, 1))
+
+pickup_restart!(simulation, DateTime(1990, 1, 1); start_date = DateTime(1990, 1, 1), repeat_year = true)
+```
+Only the model state is restored: the iteration is reset to zero and output and callback schedules start afresh from the new time.
+State not in the checkpoint (e.g. biogeochemical tracers when restarting from the physics-only spin-up) keeps the values it was initialised with.
 
 ## Performance
 Currently I get around 90 simulated years per day with the MITgcm BGC, and 140 simulated years per day with physics only on a H100 on Bouchet.

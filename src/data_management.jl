@@ -8,7 +8,7 @@ function auto_config_directories!(prefix = "";
     global ENV["NUMERICALEARTH_DATA_DIRECTORY"] = joinpath(data_root, "caches")
     global ENV["DATADEPS_LOAD_PATH"]            = joinpath(data_root, "caches", "datadeps")
 
-    forcing_dir[] = joinpath(data_root, "forcing")
+    forcing_dir[] = joinpath(data_root, "forcing_data")
     restoring_dir[] = joinpath(data_root, "climatology")
     bgc_dir[] = data_root 
     output_dir[] = joinpath(output_root, user, prefix)

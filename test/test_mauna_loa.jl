@@ -85,12 +85,21 @@ end
     seam = last(xCO₂.times) + step(xCO₂.times) / 2
     @test xCO₂[1, 1, 1, Time(seam)] ≈ (values[1] + values[end]) / 2
 
-    # the whole record with the default mean-month spacing
-    full = MaunaLoaCO₂(; dir = MLO_DIR)
+    # by default 1958--2017, cycling with the multi-year JRA55 forcing from 1958-01-01
+    cycle = MaunaLoaCO₂(; dir = MLO_DIR)
+    @test length(cycle.times) == 60 * 12
+    @test cycle.time_indexing.period == 21915days
+    @test cycle.time_indexing.period == GO.forcing_period(MultiYearJRA55(), DateTime(1958, 1, 1), DateTime(2018, 1, 1))
+    @test step(cycle.times) ≈ 21915days / 720 # 30.4375 days
+    @test first(cycle.times) ≈ step(cycle.times) / 2
+    @test all(300 .< interior(cycle) .< 450)
+
+    # the whole record with the mean-month spacing
+    full = MaunaLoaCO₂(; dates = DataWrangling.all_dates(GO.MaunaLoa()), period = nothing, dir = MLO_DIR)
     @test length(full.times) == length(DataWrangling.all_dates(GO.MaunaLoa()))
     @test step(full.times) ≈ GO.MEAN_MONTH_LENGTH
     @test full.time_indexing.period ≈ length(full.times) * GO.MEAN_MONTH_LENGTH
-    @test first(full.times) ≈ GO.MEAN_MONTH_LENGTH / 2 - 14days # start_date defaults to the first date, 15 Jan 1958
+    @test first(full.times) ≈ GO.MEAN_MONTH_LENGTH / 2
     @test all(300 .< interior(full) .< 450)
 
     # start_date shifts model time zero

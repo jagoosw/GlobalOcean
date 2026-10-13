@@ -170,7 +170,7 @@ function unstage_jra55_year!(source_dir, staging_dir, year)
 end
 
 """
-    JRA55DataStagingCallback(; source_dir, staging_dir, start_date, async = true)
+    JRA55DataStagingCallback(; source_dir, staging_dir, start_date, cycle_length = Inf, async = true)
 
 Return a simulation callback that dynamically stages JRA55 yearly files
 from `source_dir` (slow disk) to `staging_dir` (fast scratch).
@@ -184,6 +184,8 @@ At each invocation the callback:
   4. Removes files from two or more years ago to free space
 
 Each year of JRA55 data is ~15–25 GB, so scratch holds at most ~50 GB at any time.
+
+The year is that of the forcing at the model time, which cycles back to `start_date` every `cycle_length` seconds.
 
 # Async vs sync
 
@@ -207,7 +209,7 @@ explicit barrier, so no MPI calls happen on the background thread.
 
 Set `async = false` to fall back to the original blocking behaviour.
 """
-function JRA55DataStagingCallback(; source_dir, staging_dir, start_date, async = true)
+function JRA55DataStagingCallback(; source_dir, staging_dir, start_date, cycle_length = Inf, async = true)
 
     # "We've already issued a stage request for this year" — kept identical
     # across ranks so every `@root` / `@root @info` below fires symmetrically
@@ -266,7 +268,7 @@ function JRA55DataStagingCallback(; source_dir, staging_dir, start_date, async =
     end
 
     function stage_forcing_data!(sim)
-        current_year = year(start_date + Second(round(Int, sim.model.clock.time)))
+        current_year = year(forcing_date(sim.model.clock.time, start_date, cycle_length))
         needed_years = (current_year, current_year + 1)
 
         reap_completed_tasks!()
@@ -291,7 +293,7 @@ function JRA55DataStagingCallback(; source_dir, staging_dir, start_date, async =
         # across ranks, so the `@root` inside `unstage_jra55_year!` fires
         # on the same set of years on every rank.
         for y in collect(requested_years)
-            if y < current_year - 1
+            if y < current_year - 1 || y > current_year + 1 # the latter after the forcing wraps
                 @root @info "Unstaging JRA55 data for year $y from $staging_dir"
                 unstage_jra55_year!(source_dir, staging_dir, y)
                 delete!(requested_years, y)

@@ -111,14 +111,16 @@ grid_name(grid::ImmersedBoundaryGrid) = "immersed_"*grid_name(grid.underlying_gr
 
 const DEFAULT_RIVER_TRACERS = (:DIC, :Alk, :PO₄, :DOP)
 
-# PO₄ from DIP + DOC_l @ 1:106
-# DOP from DOC_sl + POC @ 1:106
-# DIC from DOC_l + DIC
-# Alk from DIC
-const DEFAULT_RIVER_INPUTS = (DIC = (DIC = 1e6/12/yr, DOC_l = 1e6/12/yr),
-                              Alk = (DIC = 1e6/12/yr, ),
-                              PO₄ = (DIP = 1e6/33/yr, DOC_l = 1e6/12/106/yr),
-                              DOP = (DOC_sl = 1e6/12/106/yr, POC = 1e6/12/106/yr))
+# RivR2O loads are in 10⁶ g yr⁻¹, converted to mmol s⁻¹ with 10⁶ g × 10³ mmol/mol / molar mass. Following the
+# RivR2O guidance (zenodo.org/records/14889524):
+# PO₄ from DIP, which already includes the labile DOP (terrestrial DOC is C:P ≈ 2583:1, so carries no P of its own)
+# DIC from DIC + labile DOC + semi-labile DOC (the latter should decay over ~1.5 yr; we have no tracer for it)
+# DOP from the recycled POC, as marine organic matter at the model's C:P of 117
+# Alk from DIC (weathering bicarbonate, 1:1)
+const DEFAULT_RIVER_INPUTS = (DIC = (DIC = 1e9/12/yr, DOC_l = 1e9/12/yr, DOC_sl = 1e9/12/yr),
+                              Alk = (DIC = 1e9/12/yr, ),
+                              PO₄ = (DIP = 1e9/30.97/yr, ),
+                              DOP = (POC = 1e9/12/117/yr, ))
 
 """
     RivR2OForcing(grid; forced_tracers = (:DIC, :Alk, :PO₄, :DOP), kwargs...)
@@ -162,7 +164,7 @@ function river_load_data(grid;
 
     # only plain CPU arrays are cached - JLD2 can't reliably round trip `RiverLoad`/`Forcing`/`Field`/GPU arrays
     # (it silently returns reconstructed types which then fail to compile in kernels)
-    save_name = joinpath(full_dir, "mapped_$(grid_name(grid))_$(start_year)_$(end_year)$(climatology_suffix)_v3.jld2")
+    save_name = joinpath(full_dir, "mapped_$(grid_name(grid))_$(start_year)_$(end_year)$(climatology_suffix)_v5.jld2")
 
     if isfile(save_name) & load_cache
         return jldopen(save_name) do f
@@ -216,12 +218,8 @@ function build_river_loads(arch, forced_tracers, data, times, source_map, offset
     return NamedTuple{forced_tracers}(map(tn -> RiverLoad(on_architecture(arch, data[tn]), time_interpolation, times, source_map, offsets), forced_tracers))
 end
 
-total_load(data, names, scales::NTuple{1}) =
-    getproperty(data, names[1]) .* scales[1]
-
-total_load(data, names, scales::NTuple{2}) =
-    getproperty(data, names[1]) .* scales[1] .+ 
-    getproperty(data, names[2]) .* scales[2]
+total_load(data, names, scales) =
+    sum(getproperty(data, name) .* scale for (name, scale) in zip(names, scales))
 
 const C = Center()
 const CCC = (C, C, C)

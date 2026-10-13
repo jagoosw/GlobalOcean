@@ -3,6 +3,7 @@ using WorldOceanAtlasTools
 using OMIPSimulations: henyey_diffusivity_field, νhb, woa_to_teos10!, salinity_surface_restoring, NormalizeTotalWater
 using Oceananigans.TurbulenceClosures: TriadIsopycnalSkewSymmetricDiffusivity, FluxTapering
 using Oceananigans.Biogeochemistry: required_biogeochemical_tracers
+using Oceananigans.OutputReaders: Cyclical
 using OceanBioME.Models.GasExchangeModel.ScaledGasTransferVelocity: JRA55
 using ClimaSeaIce: IncrementalRemapping
 using Oceananigans.Architectures: architecture
@@ -20,6 +21,12 @@ $(TYPEDSIGNATURES)
 Build a JRA55-forced ocean--sea-ice `Simulation` on `grid`,
 optionally carrying `biogeochemistry` with OAEMIP's initial conditions, rivers and iron dust.
 Extra passive `tracers` are added to `(:T, :S)`.
+
+Model time zero is `start_date`. The JRA55 forcing cycles every `forcing_cycle` seconds (see [`forcing_period`](@ref):
+21915 days for 1958--2018, 365 for repeat-year forcing) and the climatologies (WOA salinity, SeaWiFS chlorophyll,
+iron dust) every `climatology_cycle` (see [`climatology_period`](@ref): 365.25 days, or 365), so all stay in phase
+with each other and the calendar from cycle to cycle, the climatologies to within 0.75 days. Cycle any
+`atmosphere_tracers` the same way, e.g. `MaunaLoaCO₂(arch; dates, start_date, period = forcing_cycle)`.
 """
 function forced_ocean_simulation(grid; 
                                  arch = architecture(grid),
@@ -30,12 +37,15 @@ function forced_ocean_simulation(grid;
                                  staging = false,
                                  jra55_dataset = MultiYearJRA55(),
                                  jra55_dir = staging ? stage_jra55!(jra55_dataset) : forcing_dir[],
+                                 forcing_cycle = forcing_period(jra55_dataset, start_date, end_date),
+                                 climatology_cycle = climatology_period(forcing_cycle),
                                  land = JRA55PrescribedLand(grid; 
                                                             dir = jra55_dir, 
                                                             dataset = jra55_dataset,
                                                             start_date, 
                                                             end_date, 
                                                             time_indices_in_memory = backend_size, 
+                                                            time_indexing = Cyclical(forcing_cycle),
                                                             prefetch = true,
                                                             maximum_search_radius = default_maximum_search_radius(grid),
                                                             spread_radius = default_river_spread_radius(grid),
@@ -59,11 +69,13 @@ function forced_ocean_simulation(grid;
                                  closures = (vertical_closure, eddy_closure, horizontal_viscosity, background_diffusivity),
                                  salt_restoring = salinity_surface_restoring(grid, WOAMonthly(); 
                                                                              restoring_dir = restoring_dir[], 
-                                                                             piston_velocity = 0.254),
+                                                                             piston_velocity = 0.254,
+                                                                             time_indexing = Cyclical(climatology_cycle)),
                                  chlorophyll = FieldTimeSeries(Metadata(:chlorophyll; 
                                                                         dataset = SeaWiFSMonthly(), 
                                                                         dates = (DateTime(2000, 1, 1), DateTime(2000, 12, 1)), 
-                                                                        dir = restoring_dir[]), grid),
+                                                                        dir = restoring_dir[]), grid;
+                                                               time_indexing = Cyclical(climatology_cycle)),
                                  radiative_forcing = TwoColorRadiation(grid; chlorophyll),
                                  momentum_advection = WENOVectorInvariant(; vorticity_order = grid isa ORCA1GRID ? 5 : 9,
                                                                             time_discretization = AdaptiveVerticallyImplicitDiscretization(cfl=0.5)),
@@ -74,7 +86,8 @@ function forced_ocean_simulation(grid;
                                  river_fluxes = isempty(river_tracers) ? NamedTuple() :
                                                 RivR2OSurfaceFlux(grid; forced_tracers = river_tracers, climatology = true, start_year = 1985, end_year = 1995, land),
                                  dust_deposition = :Fe ∈ required_biogeochemical_tracers(biogeochemistry) ?
-                                                   (; Fe = InterpolatedIronDust(BGCInitDustIronDeposition(grid); hard_fraction = 0.987)) : NamedTuple(),
+                                                   (; Fe = InterpolatedIronDust(BGCInitDustIronDeposition(grid; time_indexing = Cyclical(climatology_cycle));
+                                                                                hard_fraction = 0.987)) : NamedTuple(),
                                  time_discretization = AdaptiveVerticallyImplicitDiscretization(cfl = 0.5),
                                  tracer_advection = tracer_advection_schemes(tracers, biogeochemistry, time_discretization),
                                  ocean = ocean_simulation(grid;
@@ -102,6 +115,7 @@ function forced_ocean_simulation(grid;
                                                                         dir = jra55_dir,
                                                                         start_date,
                                                                         end_date,
+                                                                        time_indexing = Cyclical(forcing_cycle),
                                                                         time_indices_in_memory = backend_size),
                                  sea_ice_albedo = SeaIceAlbedo(sea_ice.model.ice_thickness,
                                                                sea_ice.model.snow_thickness,
@@ -112,6 +126,7 @@ function forced_ocean_simulation(grid;
                                                                       start_date,
                                                                       end_date,
                                                                       time_indices_in_memory = backend_size,
+                                                                      time_indexing = Cyclical(forcing_cycle),
                                                                       prefetch = true,
                                                                       ocean_surface   = SurfaceRadiationProperties(0.06, 1.00),
                                                                       sea_ice_surface = SurfaceRadiationProperties(sea_ice_albedo, 1.0)),
@@ -178,7 +193,8 @@ function forced_ocean_simulation(grid;
     if staging && !(jra55_dataset isa RepeatYearJRA55)
         staging_callback = JRA55DataStagingCallback(; source_dir = forcing_dir[],
                                                       staging_dir = staging_dir[],
-                                                      start_date)
+                                                      start_date,
+                                                      cycle_length = forcing_cycle)
         add_callback!(simulation, staging_callback, TimeInterval(30days))
     end
 

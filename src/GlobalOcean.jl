@@ -5,7 +5,8 @@ export auto_config_directories!,
        forced_ocean_simulation,
        MaunaLoaCO₂,
        PrescribedChlorophyllAttenuation,
-       omip_diagnostics!, oaemip_diagnostics!, checkpointer!
+       omip_diagnostics!, oaemip_diagnostics!, checkpointer!,
+       pickup_restart!
 
 using Dates
 using DocStringExtensions
@@ -20,6 +21,7 @@ const bgc_dir = Ref(on_bouchet ? "/nfs/roberts/pi/pi_ey239/js5256/OAEMIP/data" :
 const output_dir = Ref(on_bouchet ? (joinpath("/nfs/roberts/pi/pi_ey239/", get(ENV, "USER", "no_user_this_should_error_as_long_as_no_one_makes_this_folder"), "output")) :
                                     "data/output")
 
+include("forcing_cycles.jl")
 include("data_management.jl")
 include("grids.jl")
 include("defaults.jl")
@@ -31,6 +33,7 @@ include("light_attenuation.jl")
 include("mauna_loa.jl")
 include("construct_model.jl")
 include("diagnostics.jl")
+include("restart.jl")
 
 function __init__()
     auto_config_directories!()

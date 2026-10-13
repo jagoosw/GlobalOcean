@@ -175,11 +175,12 @@ end
     MaunaLoaCO₂(architecture = CPU();
                 dataset = MaunaLoa(),
                 name = :carbon_dioxide,
-                dates = all_dates(dataset, name),
-                start_date = first(dates),
+                start_date = DateTime(1958, 1, 1),
+                end_date = DateTime(2018, 1, 1),
+                dates = filter(date -> start_date ≤ date < end_date, all_dates(dataset, name)),
                 dir = nothing,
                 FT = Float64,
-                period = nothing)
+                period = forcing_period(MultiYearJRA55(), start_date, end_date))
 
 Download the Scripps [`MaunaLoa`](@ref) record and return atmospheric CO₂ dry-air mole fraction
 (ppm) as a `FieldTimeSeries` located at `(Nothing, Nothing, Nothing)` — a single value per time,
@@ -201,11 +202,12 @@ month after the first day of the first selected month, rather than on the record
 dates. This keeps `times` a range on the GPU, so interpolating the series does not copy it to the
 host each time step; each sample is within ~2 days of its month's actual midpoint.
 
-Time indexing is `Cyclical`, so a run longer than the 1958–2024 record wraps back to 1958 rather
-than running off the end. By default the spacing is the mean Gregorian month (365.2425 / 12 days)
-and the period is that times the number of samples. Pass `period` to override it, e.g.
-`period = 365days` to cycle one year of the record in step with repeat-year forcing; the samples are
-then spread evenly over the period, `period / Nt` apart, with the same spacing across the seam.
+Time indexing is `Cyclical`. By default it takes the months from `start_date` to `end_date` and cycles them with
+the multi-year JRA55 forcing `forced_ocean_simulation` builds for the same dates (21915 days for 1958--2018, see
+[`forcing_period`](@ref)), so the CO₂ wraps back to 1958 with the atmosphere. The samples are spread evenly over
+the `period`, `period / Nt` apart (30.4375 days for 1958--2018), with the same spacing across the seam. Pass e.g.
+`period = 365days` with one year of `dates` to cycle in step with repeat-year forcing, or `period = nothing` for the
+mean Gregorian month (365.2425 / 12 days) spacing and a period of that times the number of samples.
 
 Keyword Arguments
 =================
@@ -213,20 +215,23 @@ Keyword Arguments
 - `dataset`: the [`MaunaLoa`](@ref) dataset, carrying the URL the CSV is fetched from.
 - `name`: which series to read — `:carbon_dioxide` (Mauna Loa, the default),
           `:south_pole_carbon_dioxide`, or `:mean_carbon_dioxide`.
-- `dates`: the window of the record to use. Defaults to all of it.
-- `start_date`: the date corresponding to model time zero. Default: the first date in `dates`.
+- `start_date`: the date corresponding to model time zero. Default: 1958-01-01, as `forced_ocean_simulation`.
+- `end_date`: the end of the forcing cycle. Default: 2018-01-01, as `forced_ocean_simulation`.
+- `dates`: the window of the record to use. Default: the months from `start_date` up to `end_date`.
 - `dir`: where the CSV is cached. Default: the `NumericalEarth` download cache.
 - `FT`: element type of the returned series. Default: `Float64`.
-- `period`: cycle length in seconds. Default: `nothing`, the record's span plus one final month.
+- `period`: cycle length in seconds, or `nothing` for the span of `dates` plus one final mean month.
+            Default: the multi-year JRA55 forcing's period from `start_date` to `end_date`.
 """
 function MaunaLoaCO₂(architecture::AbstractArchitecture = CPU();
                      dataset = MaunaLoa(),
                      name = :carbon_dioxide,
-                     dates = all_dates(dataset, name),
-                     start_date = first(dates),
+                     start_date = DateTime(1958, 1, 1),
+                     end_date = DateTime(2018, 1, 1),
+                     dates = filter(date -> start_date ≤ date < end_date, all_dates(dataset, name)),
                      dir = nothing,
                      FT = Float64,
-                     period = nothing)
+                     period = forcing_period(MultiYearJRA55(), start_date, end_date))
 
     metadata = if isnothing(dir)
         Metadata(name; dataset, dates)

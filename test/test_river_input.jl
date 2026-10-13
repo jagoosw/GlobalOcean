@@ -9,14 +9,16 @@ const yr = 365days
 
 @testset "DEFAULT_RIVER_INPUTS / total_load" begin
     @test keys(GO.DEFAULT_RIVER_INPUTS) == GO.DEFAULT_RIVER_TRACERS == (:DIC, :Alk, :PO₄, :DOP)
-    @test GO.DEFAULT_RIVER_INPUTS.DIC.DIC ≈ 1e6 / 12 / yr       # Tg C/yr -> mmol C/s
-    @test GO.DEFAULT_RIVER_INPUTS.PO₄.DIP ≈ 1e6 / 33 / yr
-    @test GO.DEFAULT_RIVER_INPUTS.PO₄.DOC_l ≈ GO.DEFAULT_RIVER_INPUTS.DIC.DOC_l / 106 # Redfield
-    @test GO.DEFAULT_RIVER_INPUTS.DOP.DOC_sl ≈ GO.DEFAULT_RIVER_INPUTS.DOP.POC
+    @test GO.DEFAULT_RIVER_INPUTS.DIC.DIC ≈ 1e9 / 12 / yr       # 10⁶ g C/yr -> mmol C/s
+    @test GO.DEFAULT_RIVER_INPUTS.PO₄.DIP ≈ 1e9 / 30.97 / yr
+    @test keys(GO.DEFAULT_RIVER_INPUTS.PO₄) == (:DIP,) # labile DOP is already in DIP
+    @test GO.DEFAULT_RIVER_INPUTS.DOP.POC ≈ GO.DEFAULT_RIVER_INPUTS.DIC.DIC / 117 # marine C:P
+    @test keys(GO.DEFAULT_RIVER_INPUTS.DIC) == (:DIC, :DOC_l, :DOC_sl)
 
     data = (a = [1.0 2.0; 3.0 4.0], b = [10.0 20.0; 30.0 40.0])
     @test GO.total_load(data, (:a,), (2.0,)) == 2 .* data.a
     @test GO.total_load(data, (:a, :b), (2.0, 0.5)) == 2 .* data.a .+ 0.5 .* data.b
+    @test GO.total_load(merge(data, (; c = data.a)), (:a, :b, :c), (2.0, 0.5, 1.0)) == 3 .* data.a .+ 0.5 .* data.b
 end
 
 # Columns: (1, 1) -> target 1 (mouths 1:2), (2, 2) -> target 2 (mouth 3), everything else -> 3 (empty range)
@@ -176,7 +178,7 @@ end
     @test times ≈ [0.5, 1.5, 2.5] .* yr
     @test size(data.Alk) == (4, 3) # mouths × years
     @test data.Alk[:, 1] ≈ [1, 10, 100, 1000] .* Alk_scale
-    @test data.DIC[:, 1] ≈ 2 .* data.Alk[:, 1] # DIC + DOC_l, both at 1e6/12/yr
+    @test data.DIC[:, 1] ≈ 3 .* data.Alk[:, 1] # DIC + DOC_l + DOC_sl, all at 1e9/12/yr
     @test source_map[1, 1, 1] == 1
 
     # the loads grow with the year index
@@ -185,13 +187,13 @@ end
 
     # a cache file is written
     @test any(startswith("mapped_4_4_1985_1987"), readdir(full_dir))
-    @test isfile(joinpath(full_dir, "mapped_4_4_1985_1987_v3.jld2"))
+    @test isfile(joinpath(full_dir, "mapped_4_4_1985_1987_v5.jld2"))
 
     clim, clim_times, _, _ = GO.river_load_data(RIVER_LL_GRID; forced_tracers = (:Alk,), climatology = true, kw...)
     @test isnothing(clim_times)
     @test clim.Alk isa AbstractVector
     @test length(clim.Alk) == 4
-    @test isfile(joinpath(full_dir, "mapped_4_4_1985_1987_climatology_v3.jld2"))
+    @test isfile(joinpath(full_dir, "mapped_4_4_1985_1987_climatology_v5.jld2"))
     @test clim.Alk ≈ 2 .* [1, 10, 100, 1000] .* Alk_scale # mean over 1985-1987 (see above)
 
     # load_cache = true round-trips through the JLD2 cache

@@ -53,6 +53,8 @@ try
         @testset "biogeochemistry.jl"       include("test_biogeochemistry.jl")
         @testset "light_attenuation.jl"     include("test_light_attenuation.jl")
         @testset "mauna_loa.jl"             include("test_mauna_loa.jl")
+        @testset "forcing_cycles.jl"        include("test_forcing_cycles.jl")
+        @testset "restart.jl"               include("test_restart.jl")
 
         if RUN_DATA_TESTS || RUN_ORCA_TESTS || RUN_SMOKE_TESTS
             @testset "data-dependent (opt-in)" include("test_data_dependent.jl")

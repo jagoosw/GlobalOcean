@@ -46,7 +46,6 @@ pickup_restart!(simulation, DateTime(1990, 1, 1); start_date = DateTime(1990, 1,
 
 omip_diagnostics!(simulation; async = true, filename_prefix = "amazon_alk_release")
 oaemip_diagnostics!(simulation; async = true, filename_prefix = "amazon_alk_release")
-use_async_output!(simulation)
 
 try
     run!(simulation)

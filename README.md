@@ -137,3 +137,6 @@ State not in the checkpoint (e.g. biogeochemical tracers when restarting from th
 
 ## Performance
 Currently I get around 90 simulated years per day with the MITgcm BGC, and 140 simulated years per day with physics only on a H100 on Bouchet.
+
+## Miscellaneous
+I have been requesting 8 CPUs with 16G of memory each (probably excessive) and running julia with `--threads=4 --gcthreads=4,1` which helped performance a bit.

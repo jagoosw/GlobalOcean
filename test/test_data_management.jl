@@ -35,7 +35,7 @@ end
         @test isnothing(GO.auto_config_directories!("run1"; user = "tester", data_root, output_root,
                                                      datadeps_always_accept = false))
 
-        @test GO.forcing_dir[]   == joinpath(data_root, "forcing")
+        @test GO.forcing_dir[]   == joinpath(data_root, "forcing_data")
         @test GO.restoring_dir[] == joinpath(data_root, "climatology")
         @test GO.bgc_dir[]       == data_root
         @test GO.output_dir[]    == joinpath(output_root, "tester", "run1")

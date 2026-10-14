@@ -1,7 +1,7 @@
 using JLD2: JLD2, jldopen
 using Oceananigans: restore_prognostic_state!
 using Oceananigans.OutputWriters: load_checkpoint_state
-using Oceananigans.TimeSteppers: Clock
+using Oceananigans.TimeSteppers: Clock, update_state!
 using Oceananigans.Units: days
 using NumericalEarth.EarthSystemModels: EarthSystemModel, components
 using NumericalEarth.DataWrangling: Metadata, native_times, all_dates, compute_native_date_range
@@ -112,6 +112,13 @@ function set_restart_clock!(model::EarthSystemModel, time)
     for component in components(model)
         set_restart_clock!(component, time)
     end
+
+    # the restore loaded the prescribed forcing's in-memory windows at the checkpoint's own clock, which is
+    # elsewhere in the forcing record unless the new run cycles it identically; the coupled `update_state!`
+    # doesn't refresh them, so it would read outside the windows
+    update_state!(model.atmosphere)
+    update_state!(model.land)
+    update_state!(model.radiation)
 
     return nothing
 end

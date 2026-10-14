@@ -1,0 +1,24 @@
+# The branch dependencies are direct dependencies so that their [sources] are used
+[deps]
+ClimaSeaIce = "6ba0ff68-24e6-4315-936c-2e99227c95a4"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+NumericalEarth = "904d977b-046a-4731-8b86-9235c0d1ef02"
+NumericalOcean = "284f8994-2080-4568-8d66-4adea85bd4b3"
+OMIPSimulations = "5ac3a3a1-7b1f-4d7e-9c5e-1e6c9d9b2a4d"
+OceanBioME = "a49af516-9db8-4be4-be45-1dad61c5a376"
+Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
+SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
+
+[sources]
+ClimaSeaIce = {rev = "jsw/for-oaemip", url = "https://github.com/jagoosw/ClimaSeaIce.jl.git"}
+NumericalEarth = {rev = "jsw/omip-bgc", url = "https://github.com/NumericalEarth/NumericalEarth.jl.git"}
+NumericalOcean = {path = ".."}
+OMIPSimulations = {rev = "jsw/omip-bgc", subdir = "experiments/OMIPSimulations", url = "https://github.com/NumericalEarth/NumericalEarth.jl.git"}
+OceanBioME = {rev = "jsw/for-oaemip", url = "https://github.com/OceanBioME/OceanBioME.jl.git"}
+Oceananigans = {rev = "jsw/for-oaemip", url = "https://github.com/Clima/Oceananigans.jl.git"}
+SeawaterPolynomials = {rev = "ss/conversion-functions", url = "https://github.com/clima/SeawaterPolynomials.jl.git"}
+
+[compat]
+Documenter = "1"
+Literate = "2"

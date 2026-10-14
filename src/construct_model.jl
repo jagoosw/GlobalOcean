@@ -14,7 +14,9 @@ using NumericalEarth.DataWrangling: ConservativeSurfaceFluxRestoringCallback
 using NumericalEarth.EarthSystemModels.InterfaceComputations: COARELogarithmicSimilarityProfile, ConvectiveGustiness,
                                                               WindDependentWaveFormulation, TemperatureDependentAirViscosity,
                                                               atmosphere_sea_ice_stability_functions,
-                                                              ImpureSaturationSpecificHumidity, AtmosphericThermodynamics
+                                                              ImpureSaturationSpecificHumidity, AtmosphericThermodynamics,
+                                                              ThreeEquationHeatFlux, MomentumBasedFrictionVelocity,
+                                                              InterfaceTemperatureMeltwater, GillSaturationEnhancement
 
 """
 $(TYPEDSIGNATURES)

@@ -12,6 +12,9 @@ const DOCS_REPO = "github.com/jagoosw/NumericalOceanDocumentation.git"
 
 isdir(FIGURES_DIR) || run(`git clone --depth 1 --branch figures https://$DOCS_REPO $FIGURES_DIR`)
 
+# otherwise the deployment commits the figures as a submodule rather than the files
+rm(joinpath(FIGURES_DIR, ".git"); recursive = true, force = true)
+
 # The examples are too expensive to run here, so they are converted to markdown with plain `julia` code blocks
 # (not `@example`)
 examples = ["1degree_alkalinity_release.jl"]

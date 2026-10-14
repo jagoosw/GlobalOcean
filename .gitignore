@@ -61,3 +61,4 @@ examples/OceanBioME_example_data
 
 # Documentation figures, fetched from the documentation repository by docs/make.jl
 docs/src/assets/figures
+documenter_key*

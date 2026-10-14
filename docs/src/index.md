@@ -45,6 +45,7 @@ Alternatively, clone the repository and use it as the project (`julia --project=
 - [Forcing data](forcing_data.md): where the data lives and how to get it.
 - [Restart files](restarts.md): starting from the OMIP spin-up.
 - [Spun-up configurations](configurations.md): what the spun-up states were built with.
+- [Spinning up the ``1\degree`` configuration](generated/1degree_spinup.md): building the spin-up the restarts come from.
 - [Alkalinity release at the mouth of the Amazon](@ref): a worked example.
 
 ## Performance

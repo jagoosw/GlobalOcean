@@ -17,7 +17,7 @@ rm(joinpath(FIGURES_DIR, ".git"); recursive = true, force = true)
 
 # The examples are too expensive to run here, so they are converted to markdown with plain `julia` code blocks
 # (not `@example`)
-examples = ["1degree_alkalinity_release.jl"]
+examples = ["1degree_spinup.jl", "1degree_alkalinity_release.jl"]
 
 for example in examples
     Literate.markdown(joinpath(EXAMPLES_DIR, example), GENERATED_DIR;
@@ -25,7 +25,8 @@ for example in examples
                       codefence = "````julia" => "````")
 end
 
-example_pages = ["Alkalinity release" => "generated/1degree_alkalinity_release.md"]
+example_pages = ["Spin-up" => "generated/1degree_spinup.md",
+                 "Alkalinity release" => "generated/1degree_alkalinity_release.md"]
 
 makedocs(sitename = "NumericalOcean",
          modules = [NumericalOcean],

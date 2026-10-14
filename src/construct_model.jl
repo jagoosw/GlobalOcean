@@ -10,6 +10,7 @@ using ClimaSeaIce: IncrementalRemapping
 using Oceananigans.Architectures: architecture
 using Oceananigans.TurbulenceClosures.TKEBasedVerticalDiffusivities: CATKEMixingLength
 using NumericalEarth.DataWrangling.SeaWiFS: SeaWiFSMonthly
+using NumericalEarth.DataWrangling.WOA: WOAClimatology
 using NumericalEarth.DataWrangling: ConservativeSurfaceFluxRestoringCallback
 using NumericalEarth.EarthSystemModels.InterfaceComputations: COARELogarithmicSimilarityProfile, ConvectiveGustiness,
                                                               WindDependentWaveFormulation, TemperatureDependentAirViscosity,
@@ -170,14 +171,23 @@ function forced_ocean_simulation(grid;
                                                                   biogeochemistry_interface_kwargs),
                                  Δt = default_Δt(grid),
                                  stop_time = 5 * 21915days,
-                                 progress_frequency = 100)
+                                 progress_frequency = 100,
+                                 T_and_S_initialisation_dataset = WOAAnnual(),
+                                 initialise_bgc = true)
 
-    T_init = Field(Metadatum(:temperature; dir = restoring_dir[], dataset = WOAAnnual()), grid)
-    S_init = Field(Metadatum(:salinity;    dir = restoring_dir[], dataset = WOAAnnual()), grid)
-    woa_to_teos10!(T_init, S_init)
-    set!(ocean.model, T=T_init, S=S_init)
+    if T_and_S_initialisation_dataset isa WOAClimatology
+        T_init = Field(Metadatum(:temperature; dir = restoring_dir[], dataset = T_and_S_initialisation_dataset), grid)
+        S_init = Field(Metadatum(:salinity;    dir = restoring_dir[], dataset = T_and_S_initialisation_dataset), grid)
+        woa_to_teos10!(T_init, S_init)
+        set!(ocean.model, T=T_init, S=S_init)
+    elseif !isnothing(T_and_S_initialisation_dataset)
+        @warn "Initial temperature and salinity from $(nameof(typeof(T_and_S_initialisation_dataset))) are set without conversion, " *
+              "but the model uses TEOS-10 Conservative Temperature and Absolute Salinity (only WOA datasets are converted automatically)"
+        set!(ocean.model, T = Metadatum(:temperature; dir = restoring_dir[], dataset = T_and_S_initialisation_dataset),
+                          S = Metadatum(:salinity; dir = restoring_dir[], dataset = T_and_S_initialisation_dataset))
+    end
 
-    if !isnothing(biogeochemistry)
+    if !isnothing(biogeochemistry) && initialise_bgc
         for tracer in required_biogeochemical_tracers(ocean.model.biogeochemistry)
             tracer ∈ (:T, :S) && continue
             if haskey(BGC_INIT_TRACERS, replicated_tracer(tracer))

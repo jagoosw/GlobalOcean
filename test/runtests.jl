@@ -1,5 +1,5 @@
 #=
-GlobalOcean test suite.
+NumericalOcean test suite.
 
 Default run (CPU, offline, no large data):
 
@@ -8,9 +8,9 @@ Default run (CPU, offline, no large data):
 
 Opt-in tests that need the real data (bgc_init.nc, ORCA meshes, JRA55, WOA, ECCO, ...):
 
-    GLOBALOCEAN_DATA_TESTS=true  julia --project=. test/runtests.jl   # real bgc_init.nc (local, no download)
-    GLOBALOCEAN_ORCA_TESTS=true  julia --project=. test/runtests.jl   # ORCA1 grid (downloads the mesh if missing)
-    GLOBALOCEAN_SMOKE_TESTS=true julia --project=. test/runtests.jl   # builds the full coupled model
+    NUMERICALOCEAN_DATA_TESTS=true  julia --project=. test/runtests.jl   # real bgc_init.nc (local, no download)
+    NUMERICALOCEAN_ORCA_TESTS=true  julia --project=. test/runtests.jl   # ORCA1 grid (downloads the mesh if missing)
+    NUMERICALOCEAN_SMOKE_TESTS=true julia --project=. test/runtests.jl   # builds the full coupled model
 
 See `test_data_dependent.jl` for the extra environment variables they read.
 =#
@@ -20,13 +20,13 @@ using Test
 const TEST_DIR = @__DIR__
 const TEST_DATA_DIR = joinpath(TEST_DIR, "data")
 
-# `GlobalOcean.__init__` calls `auto_config_directories!()`, which `mkpath`s `data/...` and
+# `NumericalOcean.__init__` calls `auto_config_directories!()`, which `mkpath`s `data/...` and
 # `output/$USER` relative to the working directory, so load it from a scratch directory.
 const ORIGINAL_DIR = pwd()
 const SCRATCH_DIR = mktempdir()
 cd(SCRATCH_DIR)
 
-using GlobalOcean
+using NumericalOcean
 using Oceananigans
 using Oceananigans.Units
 using OceanBioME
@@ -34,16 +34,16 @@ using NumericalEarth
 using NCDatasets
 using Dates
 
-const GO = GlobalOcean
+const GO = NumericalOcean
 
 envflag(name) = lowercase(get(ENV, name, "false")) in ("true", "1", "yes")
 
-const RUN_DATA_TESTS  = envflag("GLOBALOCEAN_DATA_TESTS")
-const RUN_ORCA_TESTS  = envflag("GLOBALOCEAN_ORCA_TESTS")
-const RUN_SMOKE_TESTS = envflag("GLOBALOCEAN_SMOKE_TESTS")
+const RUN_DATA_TESTS  = envflag("NUMERICALOCEAN_DATA_TESTS")
+const RUN_ORCA_TESTS  = envflag("NUMERICALOCEAN_ORCA_TESTS")
+const RUN_SMOKE_TESTS = envflag("NUMERICALOCEAN_SMOKE_TESTS")
 
 try
-    @testset "GlobalOcean" begin
+    @testset "NumericalOcean" begin
         @testset "data_management.jl"       include("test_data_management.jl")
         @testset "grids.jl"                 include("test_grids.jl")
         @testset "defaults.jl"              include("test_defaults.jl")
@@ -61,7 +61,7 @@ try
         if RUN_DATA_TESTS || RUN_ORCA_TESTS || RUN_SMOKE_TESTS
             @testset "data-dependent (opt-in)" include("test_data_dependent.jl")
         else
-            @info "Skipping data-dependent tests; set GLOBALOCEAN_DATA_TESTS, GLOBALOCEAN_ORCA_TESTS and/or GLOBALOCEAN_SMOKE_TESTS=true to run them."
+            @info "Skipping data-dependent tests; set NUMERICALOCEAN_DATA_TESTS, NUMERICALOCEAN_ORCA_TESTS and/or NUMERICALOCEAN_SMOKE_TESTS=true to run them."
         end
     end
 finally

@@ -1,4 +1,4 @@
-module GlobalOcean
+module NumericalOcean
 
 export auto_config_directories!,
        ORCA1, ORCA025, ORCA12,
@@ -43,4 +43,4 @@ function __init__()
     @info "Setup directories. Forcing: $(forcing_dir[]), restoring: $(restoring_dir[]), output: $(output_dir[])."
 end
 
-end # module GlobalOcean
+end # module NumericalOcean

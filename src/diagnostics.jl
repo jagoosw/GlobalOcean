@@ -47,7 +47,7 @@ function omip_diagnostics!(simulation;
                            surface_averaging_interval = 5days,
                            field_averaging_interval = 15days,
                            averaging_stride = 1,
-                           output_dir = GlobalOcean.output_dir[],
+                           output_dir = NumericalOcean.output_dir[],
                            filename_prefix = "omip",
                            file_splitting_interval = 360days,
                            async = false)
@@ -246,7 +246,7 @@ function oaemip_diagnostics!(simulation;
                              surface_averaging_interval = 5days,
                              field_averaging_interval = 15days,
                              averaging_stride = 1,
-                             output_dir = GlobalOcean.output_dir[],
+                             output_dir = NumericalOcean.output_dir[],
                              filename_prefix = "omip",
                              file_splitting_interval = 360days,
                              async = false)
@@ -364,7 +364,7 @@ output is written first.
 """
 function checkpointer!(simulation;
                        checkpoint_interval = 360days,
-                       output_dir = GlobalOcean.output_dir[],
+                       output_dir = NumericalOcean.output_dir[],
                        filename_prefix = "omip")
 
     simulation.output_writers[:checkpointer] = Checkpointer(simulation.model;

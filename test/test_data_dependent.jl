@@ -1,13 +1,13 @@
 #=
 Opt-in tests that need real data. Enabled by environment variables:
 
-  GLOBALOCEAN_DATA_TESTS=true    the real bgc_init.nc (from GLOBALOCEAN_BGC_DIR, default
+  NUMERICALOCEAN_DATA_TESTS=true    the real bgc_init.nc (from NUMERICALOCEAN_BGC_DIR, default
                                  /Users/jago/Documents/OAEMIP/data); reads only, no downloads
-  GLOBALOCEAN_ORCA_TESTS=true    the ORCA1 grid (downloads the eORCA1 mesh + bathymetry into the
+  NUMERICALOCEAN_ORCA_TESTS=true    the ORCA1 grid (downloads the eORCA1 mesh + bathymetry into the
                                  NumericalEarth cache if missing)
-  GLOBALOCEAN_SMOKE_TESTS=true   builds the full coupled model with `forced_ocean_simulation` on ORCA1 (CPU):
+  NUMERICALOCEAN_SMOKE_TESTS=true   builds the full coupled model with `forced_ocean_simulation` on ORCA1 (CPU):
                                  needs JRA55 (repeat year), WOA, SeaWiFS, ECCO and bgc_init.nc in the directories
-                                 configured by `auto_config_directories!` (GLOBALOCEAN_DATA_ROOT, default "data"
+                                 configured by `auto_config_directories!` (NUMERICALOCEAN_DATA_ROOT, default "data"
                                  relative to the repo root)
 =#
 
@@ -17,7 +17,7 @@ const REPO_DIR = dirname(TEST_DIR)
 
 if RUN_DATA_TESTS
     @testset "BGCInitClimatology (real bgc_init.nc)" begin
-        bgc_dir = get(ENV, "GLOBALOCEAN_BGC_DIR", "/Users/jago/Documents/OAEMIP/data")
+        bgc_dir = get(ENV, "NUMERICALOCEAN_BGC_DIR", "/Users/jago/Documents/OAEMIP/data")
         if !isfile(joinpath(bgc_dir, "bgc_init.nc"))
             @warn "No bgc_init.nc in $bgc_dir; skipping"
             @test_skip false
@@ -80,7 +80,7 @@ end
 
 if RUN_SMOKE_TESTS
     @testset "forced_ocean_simulation smoke test (ORCA1, CPU)" begin
-        data_root = get(ENV, "GLOBALOCEAN_DATA_ROOT", joinpath(REPO_DIR, "data"))
+        data_root = get(ENV, "NUMERICALOCEAN_DATA_ROOT", joinpath(REPO_DIR, "data"))
         GO.auto_config_directories!("test"; user = get(ENV, "USER", "test"), data_root,
                                     output_root = mktempdir())
 

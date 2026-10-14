@@ -27,5 +27,5 @@ jobs:
       - uses: julia-actions/cache@v2
       # No Manifest is committed, so the branch dependencies resolve from the `[sources]` in Project.toml
       - uses: julia-actions/julia-buildpkg@v1
-      # The default suite only: CPU, no large data. The GLOBALOCEAN_*_TESTS opt-in sets need local data.
+      # The default suite only: CPU, no large data. The NUMERICALOCEAN_*_TESTS opt-in sets need local data.
       - uses: julia-actions/julia-runtest@v1

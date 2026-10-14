@@ -1,4 +1,4 @@
-using GlobalOcean
+using NumericalOcean
 using NumericalEarth
 using Oceananigans
 using Oceananigans.Units

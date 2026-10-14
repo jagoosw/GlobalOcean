@@ -26,7 +26,7 @@ julia> Pkg.add([PackageSpec(url="https://github.com/NumericalEarth/NumericalEart
                 PackageSpec(url="https://github.com/clima/SeawaterPolynomials.jl.git", rev="ss/conversion-functions"),
                 PackageSpec(url="https://github.com/jagoosw/GlobalOcean", rev="v0.1.0")])
 ```
-The branches have to be added first, in the same call or before `GlobalOcean`, because Pkg ignores the `[sources]` in GlobalOcean's `Project.toml` when it is installed as a package, and `OMIPSimulations` and some dependencies are not registered.
+The branches have to be added first, in the same call or before `NumericalOcean`, because Pkg ignores the `[sources]` in NumericalOcean's `Project.toml` when it is installed as a package, and `OMIPSimulations` and some dependencies are not registered.
 This puts Oceananigans, OceanBioME and NumericalEarth in your project, so they can be used in scripts; you will also need to add CUDA to run on the GPU:
 ```console
 julia> Pkg.add("CUDA")
@@ -36,7 +36,7 @@ Alternatively, clone this repo and use it as the project (`julia --project=. -e 
 As shown in `examples/1degree.jl`, the default configuration is an ocean-sea ice model model forced with JRA55 atmosphere and land, configured to setup (semi)-validated closures.
 The model is initialised with WOA climatology temperature and salinity, and ECCO sea ice concentration and thickness.
 ```julia
-using GlobalOcean
+using NumericalOcean
 using NumericalEarth
 using Oceananigans
 using Oceananigans.Units
@@ -114,8 +114,8 @@ simulation = forced_ocean_simulation(grid;
 Default is 1Tmol over 1 year in a 250km standard deviation patch cutoff at 3 standard deviations over the surface cells only.
 
 ## Forcing data
-To change the automatically configured data and output directories you can change the value of `GlobalOcean.forcing_dir`, `GlobalOcean.restoring_dir`, `GlobalOcean.staging_dir`, `GlobalOcean.bgc_dir`, and `GlobalOcean.output_dir`.
-They are [`Ref`s ](https://discourse.julialang.org/t/what-is-ref/47610) so you set it like `GlobalOcean.bgc_dir[] = "~/bgc_data/"`.
+To change the automatically configured data and output directories you can change the value of `NumericalOcean.forcing_dir`, `NumericalOcean.restoring_dir`, `NumericalOcean.staging_dir`, `NumericalOcean.bgc_dir`, and `NumericalOcean.output_dir`.
+They are [`Ref`s ](https://discourse.julialang.org/t/what-is-ref/47610) so you set it like `NumericalOcean.bgc_dir[] = "~/bgc_data/"`.
 `staging_dir` is only needed when you have a slow `forcing_dir` so that data can be asynchronously loaded to a faster drive before it is needed.
 
 ### Normally...
@@ -130,7 +130,7 @@ If you are running on Bouchet the package will point to a predownloaded version 
 On Bouchet `staging_dir` will automatically configure to use the fast NVMe storage on the nodes and will be used if you pass `staging=true` to `forced_ocean_simulation` (although I have found this results in minimal performance gain).
 
 ## Restart files
-`pickup_restart!(simulation, date)` starts a simulation from the checkpoint of the OMIP spin-up (`orca_checkpoint_iteration*.jld2` in `GlobalOcean.OMIP_RESTART_DIR[]`, which points at the spin-up on Bouchet) whose forcing date is closest to `date`, and sets the model clock so the forcing is picked up where the checkpointed run had it.
+`pickup_restart!(simulation, date)` starts a simulation from the checkpoint of the OMIP spin-up (`orca_checkpoint_iteration*.jld2` in `NumericalOcean.OMIP_RESTART_DIR[]`, which points at the spin-up on Bouchet) whose forcing date is closest to `date`, and sets the model clock so the forcing is picked up where the checkpointed run had it.
 The spin-up was forced with 1958-2018 JRA55 and checkpointed every 360 days, so checkpoints fall on different dates in each cycle; by default only the last cycle is searched (pass `cycle = n`, 0-based, for another).
 ```julia
 simulation = forced_ocean_simulation(grid)

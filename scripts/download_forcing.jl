@@ -1,4 +1,4 @@
-using GlobalOcean
+using NumericalOcean
 using Dates
 using Downloads: Downloads
 
@@ -10,8 +10,8 @@ using WorldOceanAtlasTools
 
 ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
-forcing_dir       = GlobalOcean.forcing_dir[]
-climatology       = GlobalOcean.restoring_dir[]
+forcing_dir       = NumericalOcean.forcing_dir[]
+climatology       = NumericalOcean.restoring_dir[]
 sea_ice_date      = DateTime(1993, 1, 1)
 chlorophyll_dates = (DateTime(2000, 1, 1), DateTime(2000, 12, 1))
 

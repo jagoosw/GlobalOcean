@@ -1,4 +1,4 @@
-# Oceananigans-OceanBioME global configurations and pickup files
+# NumericalOcean: global configurations in Oceananigans 
 This configuration package assumes familiarity with [Oceananigans](https://github.com/clima/oceananigans.jl/) and to some extent [NumericalEarth](https://github.com/numericalearth/numericalearth.jl/).
 ## Setup
 This repo depends on un-released branches of Oceananigans, ClimaSeaIce, OceanBioME, SeawaterPolynomials, and NumericalEarth. To use install create a julia project:
@@ -155,7 +155,7 @@ Currently I get around 90 simulated years per day with the MITgcm BGC, and 140 s
 I have been requesting 8 CPUs with 16G of memory each (probably excessive) and running julia with `--threads=4 --gcthreads=4,1` which helped performance a bit.
 
 # Spun-up configurations
-## Oceananigans-ClimaSeaIce-JRA55-ORCA1
+## NumericalOcean1-JRA55_v0.1.0
 As built by `forced_ocean_simulation(ORCA1(GPU()))` with default arguments.
 
 | | |

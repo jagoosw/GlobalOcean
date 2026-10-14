@@ -1,4 +1,4 @@
-using JLD2: jldopen
+using JLD2: JLD2, jldopen
 using Oceananigans: restore_prognostic_state!
 using Oceananigans.OutputWriters: load_checkpoint_state
 using Oceananigans.TimeSteppers: Clock
@@ -22,10 +22,14 @@ function checkpoint_times(dir, prefix)
     regex = Regex("^" * prefix * "_iteration[0-9]+\\.jld2\$")
     paths = [joinpath(dir, file) for file in readdir(dir) if occursin(regex, file)]
     isempty(paths) && throw(ArgumentError("no $(prefix)_iteration*.jld2 checkpoints in $dir"))
-    times = [jldopen(path, "r") do file; Float64(file["simulation/model/clock/time"]); end for path in paths]
+    times = [jldopen(path, "r") do file; checkpointed_time(file["simulation/model/clock"]); end for path in paths]
     order = sortperm(times)
     return paths[order], times[order]
 end
+
+# The `Checkpointer` writes the whole `Clock` as one dataset, but a group holding `time` is also accepted
+checkpointed_time(clock::JLD2.Group) = Float64(clock["time"])
+checkpointed_time(clock) = Float64(clock.time)
 
 """
 $(TYPEDSIGNATURES)

@@ -25,6 +25,20 @@ checkpoint_path(iteration) = joinpath(RESTART_DIR, "orca_checkpoint_iteration$it
     @test_throws ArgumentError GO.checkpoint_times(RESTART_DIR, "no_such_prefix")
 end
 
+@testset "checkpoint_times from a Checkpointer" begin
+    # the Checkpointer writes the clock as one dataset rather than a group
+    dir = mktempdir()
+    grid = RectilinearGrid(size = (2, 2, 2), extent = (1, 1, 1))
+    model = HydrostaticFreeSurfaceModel(grid; tracers = :c, buoyancy = nothing)
+    simulation = Simulation(model; Δt = 10, stop_iteration = 4, verbose = false)
+    simulation.output_writers[:checkpointer] = Checkpointer(model; schedule = IterationInterval(2), dir, prefix = "real_checkpoint")
+    run!(simulation)
+
+    paths, times = GO.checkpoint_times(dir, "real_checkpoint")
+    @test basename.(paths) == ["real_checkpoint_iteration$i.jld2" for i in (0, 2, 4)]
+    @test times == [0, 20, 40]
+end
+
 @testset "forcing_cycle_length" begin
     # the last node (2018-01-01T00) is included, so the cycle is one 3-hourly interval longer than 1958--2018
     @test GO.forcing_cycle_length(MultiYearJRA55(), DateTime(1958, 1, 1), DateTime(2018, 1, 1)) == 21915days + 3hours

@@ -156,7 +156,7 @@ I have been requesting 8 CPUs with 16G of memory each (probably excessive) and r
 
 # Spun-up configurations
 ## Oceananigans-ClimaSeaIce-JRA55-ORCA1
-Physics-only ocean--sea ice spin-up that `pickup_restart!` starts from (`GlobalOcean.OMIP_RESTART_DIR[]`), built by `forced_ocean_simulation(ORCA1(GPU()))` with default arguments.
+As built by `forced_ocean_simulation(ORCA1(GPU()))` with default arguments.
 
 | | |
 |---|---|
@@ -171,8 +171,8 @@ Physics-only ocean--sea ice spin-up that `pickup_restart!` starts from (`GlobalO
 | **Horizontal viscosity** | biharmonic, ν₄ = (cell area)² / 50 days |
 | **Sea ice** | ClimaSeaIce, 4 thickness categories, EVP dynamics ([Kimmritz et al., 2017](https://doi.org/10.1016/j.ocemod.2017.05.006)), landfast basal stress ([Lemieux et al., 2015](https://doi.org/10.1002/2014JC010678)), incremental remapping ([Lipscomb & Hunke, 2004](https://doi.org/10.1175/1520-0493(2004)132%3C1341:MSITUI%3E2.0.CO;2)) |
 | **Atmosphere and runoff** | JRA55-do 1958--2018 ([Tsujino et al., 2018](https://doi.org/10.1016/j.ocemod.2018.07.002)) |
-| **Air--sea fluxes** | COARE similarity theory ([Edson et al., 2013](https://doi.org/10.1175/JPO-D-12-0173.1)) |
-| **Ice--ocean heat flux** | three-equation ([Holland & Jenkins, 1999](https://doi.org/10.1175/1520-0485(1999)029%3C1787:MTIOIA%3E2.0.CO;2)) |
+| **Air-sea fluxes** | COARE similarity theory ([Edson et al., 2013](https://doi.org/10.1175/JPO-D-12-0173.1)) |
+| **Ice-ocean heat flux** | three-equation ([Holland & Jenkins, 1999](https://doi.org/10.1175/1520-0485(1999)029%3C1787:MTIOIA%3E2.0.CO;2)) |
 | **Shortwave penetration** | two-band, SeaWiFS chlorophyll climatology |
 | **Salinity restoring** | to monthly WOA, piston velocity 0.254 m day⁻¹ |
 | **Initial conditions** | WOA annual temperature and salinity, ECCO4 sea ice (January 1993), ocean at rest |

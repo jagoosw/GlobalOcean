@@ -157,6 +157,7 @@ I have been requesting 8 CPUs with 16G of memory each (probably excessive) and r
 # Spun-up configurations
 ## NumericalOcean1-JRA55_v0.1.0
 As built by `forced_ocean_simulation(ORCA1(GPU()))` with default arguments.
+Spinup checkpoints are available on [Bouchet](https://docs.ycrc.yale.edu/clusters/bouchet/), if you would like access elsewhere we can share them (each one is ~4.5GiB).
 
 | | |
 |---|---|

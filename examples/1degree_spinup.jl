@@ -53,4 +53,4 @@ end
 
 #md # ## Results
 #md #
-#md # ![Surface fields through the spin-up](../assets/figures/spinup/physics_surface.mp4)
+#md # ![Surface fields in the final 10 years](../assets/figures/spinup/physics_surface.mp4)

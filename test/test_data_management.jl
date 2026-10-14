@@ -38,7 +38,7 @@ end
         @test GO.forcing_dir[]   == joinpath(data_root, "forcing_data")
         @test GO.restoring_dir[] == joinpath(data_root, "climatology")
         @test GO.bgc_dir[]       == data_root
-        @test GO.output_dir[]    == joinpath(output_root, "tester", "run1")
+        @test GO.output_dir[]    == joinpath(output_root, "tester", "output", "run1")
 
         @test ENV["DATADEPS_ALWAYS_ACCEPT"] == "false"
         @test ENV["NUMERICALEARTH_DATA_DIRECTORY"] == joinpath(data_root, "caches")
@@ -49,9 +49,9 @@ end
             @test isdir(d)
         end
 
-        # no prefix: output goes straight into the user's directory; calling again is harmless
+        # no prefix: output goes straight into the user's output directory; calling again is harmless
         GO.auto_config_directories!(; user = "tester", data_root, output_root)
-        @test rstrip(GO.output_dir[], '/') == joinpath(output_root, "tester")
+        @test rstrip(GO.output_dir[], '/') == joinpath(output_root, "tester", "output")
         @test ENV["DATADEPS_ALWAYS_ACCEPT"] == "true"
     end
 end

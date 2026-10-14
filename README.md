@@ -155,9 +155,9 @@ Currently I get around 90 simulated years per day with the MITgcm BGC, and 140 s
 I have been requesting 8 CPUs with 16G of memory each (probably excessive) and running julia with `--threads=4 --gcthreads=4,1` which helped performance a bit.
 
 # Spun-up configurations
+Spinup checkpoints are available on [Bouchet](https://docs.ycrc.yale.edu/clusters/bouchet/), if you would like access elsewhere we can share them (each one is ~4.5GiB).
 ## NumericalOcean1-JRA55_v0.1.0
 As built by `forced_ocean_simulation(ORCA1(GPU()))` with default arguments.
-Spinup checkpoints are available on [Bouchet](https://docs.ycrc.yale.edu/clusters/bouchet/), if you would like access elsewhere we can share them (each one is ~4.5GiB).
 
 | | |
 |---|---|

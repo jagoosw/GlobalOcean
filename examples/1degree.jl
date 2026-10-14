@@ -13,7 +13,7 @@ simulation = forced_ocean_simulation(grid)
 
 pickup_restart!(simulation, DateTime(1958, 1, 1))
 
-omip_diagnostics!(simulation; async = true) # needs `julia --threads ≥ 2`
+omip_diagnostics!(simulation; async = true)
 checkpointer!(simulation)
 
 try

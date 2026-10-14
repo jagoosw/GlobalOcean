@@ -1,4 +1,7 @@
 # NumericalOcean: global configurations in Oceananigans 
+[![DOI](https://zenodo.org/badge/1407843229.svg)](https://doi.org/10.5281/zenodo.23375796) 
+[![Documentation](https://img.shields.io/badge/Documentation-blue?style=for-the-badge)](https://jagoosw.github.io/NumericalOceanDocumentation/stable/ "Go to project documentation")
+
 This configuration package assumes familiarity with [Oceananigans](https://github.com/clima/oceananigans.jl/) and to some extent [NumericalEarth](https://github.com/numericalearth/numericalearth.jl/).
 ## Setup
 This repo depends on un-released branches of Oceananigans, ClimaSeaIce, OceanBioME, SeawaterPolynomials, and NumericalEarth. To use install create a julia project:

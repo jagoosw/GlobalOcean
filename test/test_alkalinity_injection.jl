@@ -40,9 +40,8 @@ end
     @test isbits(low)
     @test low.rate == gi.rate
 
-    for t in (start - 1, start, start + 100days), k in 1:2, j in 1:20, i in 1:20
-        @test low(i, j, k, INJECTION_GRID, injection_clock(t), nothing) ≈ gi(i, j, k, INJECTION_GRID, injection_clock(t), nothing)
-    end
+    @test all(low(i, j, k, INJECTION_GRID, injection_clock(t), nothing) ≈ gi(i, j, k, INJECTION_GRID, injection_clock(t), nothing)
+              for t in (start - 1, start, start + 100days), k in 1:2, j in 1:20, i in 1:20)
 end
 
 @testset "GaussianInjection as a forcing" begin

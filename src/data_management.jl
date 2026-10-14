@@ -11,7 +11,7 @@ function auto_config_directories!(prefix = "";
     forcing_dir[] = joinpath(data_root, "forcing_data")
     restoring_dir[] = joinpath(data_root, "climatology")
     bgc_dir[] = data_root 
-    output_dir[] = joinpath(output_root, user, prefix)
+    output_dir[] = joinpath(output_root, user, "output", prefix)
 
     for d in (forcing_dir[], restoring_dir[], output_dir[],
               ENV["NUMERICALEARTH_DATA_DIRECTORY"], ENV["DATADEPS_LOAD_PATH"])

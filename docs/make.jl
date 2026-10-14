@@ -26,7 +26,7 @@ example_pages = ["Alkalinity release" => "generated/1degree_alkalinity_release.m
 
 makedocs(sitename = "NumericalOcean",
          modules = [NumericalOcean],
-         repo = Remotes.GitHub("jagoosw", "GlobalOcean"),
+         repo = Remotes.GitHub("jagoosw", "NumericalOcean"),
          format = Documenter.HTML(prettyurls = get(ENV, "CI", "false") == "true",
                                   edit_link = "main",
                                   canonical = "https://jagoosw.github.io/NumericalOceanDocumentation/stable/",
@@ -42,7 +42,7 @@ makedocs(sitename = "NumericalOcean",
          # most of the internals are undocumented for now
          warnonly = [:missing_docs, :cross_references])
 
-deploydocs(repo = "github.com/jagoosw/GlobalOcean.git",
+deploydocs(repo = "github.com/jagoosw/NumericalOcean.git",
            deploy_repo = DOCS_REPO,
            devbranch = "main",
            push_preview = true)

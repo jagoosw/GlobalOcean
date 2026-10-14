@@ -26,7 +26,7 @@ julia> Pkg.add([PackageSpec(url="https://github.com/NumericalEarth/NumericalEart
                 PackageSpec(url="https://github.com/jagoosw/ClimaSeaIce.jl.git", rev="jsw/for-oaemip"),
                 PackageSpec(url="https://github.com/OceanBioME/OceanBioME.jl.git", rev="jsw/for-oaemip"),
                 PackageSpec(url="https://github.com/clima/SeawaterPolynomials.jl.git", rev="ss/conversion-functions"),
-                PackageSpec(url="https://github.com/jagoosw/GlobalOcean", rev="v0.1.0")])
+                PackageSpec(url="https://github.com/jagoosw/NumericalOcean", rev="v0.1.0")])
 ```
 
 The branches have to be added first, in the same call or before `NumericalOcean`, because Pkg ignores the `[sources]` in NumericalOcean's `Project.toml` when it is installed as a package, and `OMIPSimulations` and some dependencies are not registered.
